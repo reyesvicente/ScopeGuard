@@ -1,0 +1,26 @@
+/* ice-ds ships its own preflight, so only Tailwind's theme + utilities are pulled in. */
+@import "ice-ds/styles";
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme {
+  --color-neo-yellow: #ffde59;
+  --color-neo-blue: #5ce1e6;
+  --color-neo-pink: #ff66c4;
+  --color-neo-green: #7ed957;
+  --color-neo-purple: #c678dd;
+  --color-neo-black: #0f0f0f;
+  --color-neo-offwhite: #fffdf5;
+  --color-neo-red: #ef4444;
+  --color-neo-amber: #f59e0b;
+  --font-display: "Space Grotesk Variable", system-ui, sans-serif;
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --shadow-neo: 4px 4px 0 #0f0f0f;
+}
+
+body {
+  background: var(--color-neo-offwhite);
+  color: var(--color-neo-black);
+  font-family: var(--font-sans);
+}

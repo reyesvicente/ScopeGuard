@@ -1,0 +1,63 @@
+volumes:
+  scopeguard_local_postgres_data: {}
+  scopeguard_local_postgres_data_backups: {}
+  scopeguard_local_ollama_models: {}
+  
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: scopeguard_local_django
+    container_name: scopeguard_local_django
+    depends_on:
+      - postgres
+      - mailpit
+      - ollama
+    volumes:
+      - /app/.venv
+      - .:/app:z
+    env_file:
+      - path: ./.envs/.local/.django
+        required: false
+      - path: ./.envs/.local/.postgres
+        required: false
+    ports:
+      - '8000:8000'
+    command: /start
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: scopeguard_production_postgres
+    container_name: scopeguard_local_postgres
+    volumes:
+      - scopeguard_local_postgres_data:/var/lib/postgresql/18/docker
+      - scopeguard_local_postgres_data_backups:/backups
+    env_file:
+      - path: ./.envs/.local/.postgres
+        required: false
+
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+    container_name: scopeguard_local_mailpit
+    ports:
+      - "8025:8025"
+
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    container_name: scopeguard_local_ollama
+    volumes:
+      - scopeguard_local_ollama_models:/root/.ollama
+    ports:
+      - "11434:11434"
+    # Uncomment to use an NVIDIA GPU (requires nvidia-container-toolkit):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
