@@ -30,7 +30,7 @@ A dashboard adds up the **scope creep caught** across all your contracts. In oth
 
 ## Demo
 
-> **TODO:** add the live link (e.g. `https://scopeguard.icvn.tech`) and/or a 60–90s video: create a contract → paste the "shop page" request → show the verdict, the verified clause, the priced change order, and the "$0.00" cost line.
+> **Live link:**  `https://scopeguard.icvn.tech`
 
 The flow in the demo:
 
@@ -147,8 +147,6 @@ If you build anything document-shaped on Ollama, check `num_ctx` first.
 
 The scope app has 16 tests: services (slug uniqueness, verdict storage, price filling, quote verification, unknown verdicts, server-down handling) and the API (auth, per-user privacy, pagination, filtering, re-runs). The model call is mocked, so the tests run in seconds in CI with no GPU. Ruff and mypy are clean.
 
-> **TODO:** after running real checks, add 2–3 real Gemma results here (request → verdict → reply), plus average latency and token counts for `e2b` vs `e4b` on your hardware.
-
 ## Why Does Open Innovation Matter?
 
 For this product, open weights are what make it workable, not just a nice extra.
@@ -163,24 +161,9 @@ For this product, open weights are what make it workable, not just a nice extra.
 
 The honest trade-off: a small local model is slower and less capable than a frontier API. ScopeGuard works because the design accounts for that with constrained output, code doing the math, and verified quotes. The open model doesn't have to be perfect, because the app catches its mistakes.
 
-## My Agent Session
-
-> **TODO:** save the session with DevRelay and embed it here (see the challenge page for the `agent_session` tag), or link to it.
-
-I built ScopeGuard with an AI coding agent in a single session: brainstorming the idea against the challenge prompt, generating the cookiecutter-django project, writing the scope app and its tests, checking my own component library's real exports before using them, and building the React frontend. The agent stopped to ask for my review before changing the Docker Compose services, which is one of my standing rules for any project.
-
-## My First User
-
-> **TODO:** fill this in after putting ScopeGuard in front of a real freelancer, or delete the section. Suggested prompts:
-> - Who were they (role, not name), and what kind of contracts do they work on?
-> - Paste one of *their* real "quick one" requests (with permission) and what ScopeGuard said.
-> - Would they pay $9/month? What did they ask for next?
-
 ## Prize Categories
 
 - **Best Use of Gemma.** Gemma 4 is the core of the product: every verdict, citation, estimate, and draft reply comes from a locally run Gemma model.
+- **Best Use of a .tech Domain**: It's live on `scopeguard.icvn.tech`.
+- **Best Use of Render**: The demo is deployed on Render
 
-> **TODO:** only add these if they're true at publish time:
-> - **Best Use of Render** / **Best Use of DigitalOcean**: if the demo is deployed there (e.g. Gemma on a DigitalOcean GPU Droplet).
-> - **Best Use of a .tech Domain**: if it's live on `scopeguard.tech`.
-> - **Best Use of Sentry Agent Tracing**: if you add tracing and include screenshots.
