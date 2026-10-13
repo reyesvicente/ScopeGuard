@@ -41,8 +41,7 @@ The flow in the demo:
 
 ## Code
 
-> **TODO:** push the repo and replace with the embed:
-> `{% embed https://github.com/<your-username>/scopeguard %}`
+{% embed https://github.com/reyesvicente/ScopeGuard %}
 
 MIT-licensed. Django 6 + Django REST Framework on the backend, React 18 + Vite on the frontend, and Ollama running Gemma 4 for inference. The whole stack, model server included, comes up with one `docker compose up`.
 
