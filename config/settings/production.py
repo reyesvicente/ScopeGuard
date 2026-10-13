@@ -7,6 +7,7 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 
 from .base import *  # noqa: F403
+from .base import CSRF_TRUSTED_ORIGINS
 from .base import DATABASES
 from .base import INSTALLED_APPS
 from .base import REDIS_URL
@@ -18,7 +19,12 @@ from .base import env
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["scopeguard.tech"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["scopeguard.icvn.tech"])
+# Render injects the service's *.onrender.com hostname.
+RENDER_EXTERNAL_HOSTNAME = env("RENDER_EXTERNAL_HOSTNAME", default=None)
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS = [*CSRF_TRUSTED_ORIGINS, f"https://{RENDER_EXTERNAL_HOSTNAME}"]
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -116,7 +122,7 @@ MEDIA_URL = f"https://{aws_s3_domain}/media/"
 # https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
 DEFAULT_FROM_EMAIL = env(
     "DJANGO_DEFAULT_FROM_EMAIL",
-    default="ScopeGuard <noreply@scopeguard.tech>",
+    default="ScopeGuard <noreply@icvn.tech>",
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#server-email
 SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
@@ -206,7 +212,7 @@ sentry_sdk.init(
 # -------------------------------------------------------------------------------
 # Tools that generate code samples can use SERVERS to point to the correct domain
 SPECTACULAR_SETTINGS["SERVERS"] = [
-    {"url": "https://scopeguard.tech", "description": "Production server"},
+    {"url": "https://scopeguard.icvn.tech", "description": "Production server"},
 ]
 # Your stuff...
 # ------------------------------------------------------------------------------

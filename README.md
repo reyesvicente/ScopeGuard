@@ -38,6 +38,24 @@ Sign up at http://localhost:5173 (verification emails land in Mailpit at http://
 | `OLLAMA_NUM_CTX`  | `16384`               | Ollama's default context is too small for a full SOW    |
 | `OLLAMA_TIMEOUT`  | `300`                 | Seconds; CPU inference on a long SOW can take a while   |
 
+### Deploy to Render
+
+`render.yaml` is a [Blueprint](https://render.com/docs/blueprint-spec) for the whole stack:
+
+| Service             | Type            | Purpose                                                   |
+| ------------------- | --------------- | --------------------------------------------------------- |
+| `scopeguard`        | Web (Docker)    | Django API + the React build (served from `/static/spa/`) |
+| `scopeguard-ollama` | Private service | Gemma via Ollama, with a 20 GB disk for model weights     |
+| `scopeguard-cache`  | Key Value       | Django cache + API throttling                             |
+| `scopeguard-db`     | PostgreSQL      | Database                                                  |
+
+1. In Render: **New → Blueprint**, pick this repo.
+2. Fill in the prompted secrets: `DJANGO_ADMIN_URL`, the S3, Mailgun and Sentry values.
+3. The first deploy of `scopeguard-ollama` downloads `gemma4:e2b` (~4.6 GB) to its disk; later deploys reuse it.
+4. Point a CNAME for `scopeguard.icvn.tech` at the `scopeguard` service's `onrender.com` hostname.
+
+Inference is CPU-only on Render, so a check takes tens of seconds; `SCOPE_CHECK_THROTTLE_RATE` (default `30/hour` per user) caps model usage.
+
 ### API
 
 All endpoints live under `/api/` and return `{"data": ..., "message": "", "errors": null}`.

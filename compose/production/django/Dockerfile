@@ -1,4 +1,16 @@
 
+# Build the React SPA; Django + whitenoise serve it from /static/spa/.
+FROM node:22-bookworm-slim AS frontend-build-stage
+
+WORKDIR /frontend
+
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=bind,source=frontend/package.json,target=package.json \
+    --mount=type=bind,source=frontend/package-lock.json,target=package-lock.json \
+    npm ci
+COPY frontend/ ./
+RUN npm run build
+
 # define an alias for the specific python version used in this file.
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim AS python-build-stage
 
@@ -63,6 +75,7 @@ RUN chmod +x /start
 
 # Copy the application from the builder
 COPY --from=python-build-stage --chown=django:django ${APP_HOME} ${APP_HOME}
+COPY --from=frontend-build-stage --chown=django:django /frontend/dist ${APP_HOME}/scopeguard/static/spa
 
 # make django owner of the WORKDIR directory as well.
 RUN chown django:django ${APP_HOME}

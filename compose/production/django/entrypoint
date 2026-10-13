@@ -4,6 +4,11 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+# Managed Postgres (e.g. Render) is configured via DATABASE_URL and is already up.
+if [ -n "${DATABASE_URL:-}" ]; then
+    exec "$@"
+fi
+
 if [ -z "${POSTGRES_USER}" ]; then
     base_postgres_image_default_user='postgres'
     export POSTGRES_USER="${base_postgres_image_default_user}"

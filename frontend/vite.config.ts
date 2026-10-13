@@ -2,13 +2,15 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   // Django container's published port; the SPA itself only calls /api/.
   const target = env.VITE_DJANGO_URL ?? "http://localhost:8000";
   const toDjango = { target, changeOrigin: false };
 
   return {
+    // In production Django + whitenoise serve the build from /static/spa/.
+    base: command === "build" ? "/static/spa/" : "/",
     plugins: [react(), tailwindcss()],
     server: {
       port: 5173,

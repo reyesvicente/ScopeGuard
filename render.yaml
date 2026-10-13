@@ -1,0 +1,104 @@
+# Render Blueprint for ScopeGuard — https://render.com/docs/blueprint-spec
+#
+# scopeguard          Django API + React SPA (public, custom domain)
+# scopeguard-ollama   Gemma via Ollama on Render's private network (never public)
+# scopeguard-cache    Key Value (Redis) for Django's cache and API throttling
+# scopeguard-db       PostgreSQL
+
+services:
+  - type: web
+    name: scopeguard
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./compose/production/django/Dockerfile
+    dockerContext: .
+    dockerCommand: /start
+    preDeployCommand: python manage.py migrate --noinput
+    domains:
+      - scopeguard.icvn.tech
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ADMIN_URL
+        sync: false # e.g. "a-long-random-path/" (keep the trailing slash)
+      - key: DJANGO_ALLOWED_HOSTS
+        value: scopeguard.icvn.tech
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: https://scopeguard.icvn.tech
+      - key: DATABASE_URL
+        fromDatabase:
+          name: scopeguard-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: scopeguard-cache
+          property: connectionString
+      # Ollama
+      - key: OLLAMA_BASE_URL
+        fromService:
+          type: pserv
+          name: scopeguard-ollama
+          property: hostport
+      - key: OLLAMA_MODEL
+        value: gemma4:e2b
+      - key: OLLAMA_NUM_CTX
+        value: "16384"
+      - key: OLLAMA_TIMEOUT
+        value: "300"
+      - key: SCOPE_CHECK_THROTTLE_RATE
+        value: 30/hour
+      - key: WEB_CONCURRENCY
+        value: "2"
+      # S3 (media storage)
+      - key: DJANGO_AWS_ACCESS_KEY_ID
+        sync: false
+      - key: DJANGO_AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: DJANGO_AWS_STORAGE_BUCKET_NAME
+        sync: false
+      - key: DJANGO_AWS_S3_REGION_NAME
+        sync: false
+      # Mailgun (signup verification emails)
+      - key: MAILGUN_API_KEY
+        sync: false
+      - key: MAILGUN_DOMAIN
+        sync: false
+      # Sentry
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.2"
+
+  - type: pserv
+    name: scopeguard-ollama
+    runtime: docker
+    # CPU-only inference: gemma4:e2b needs ~8 GB RAM including a 16k context.
+    plan: pro plus
+    dockerfilePath: ./compose/production/ollama/Dockerfile
+    dockerContext: ./compose/production/ollama
+    disk:
+      name: ollama-models
+      mountPath: /root/.ollama
+      sizeGB: 20
+    envVars:
+      - key: OLLAMA_MODEL
+        value: gemma4:e2b
+      # Keep the model loaded so checks don't pay a cold-start each time.
+      - key: OLLAMA_KEEP_ALIVE
+        value: "-1"
+      - key: OLLAMA_NUM_PARALLEL
+        value: "1"
+
+  - type: keyvalue
+    name: scopeguard-cache
+    plan: free
+    ipAllowList: [] # private network only
+
+databases:
+  - name: scopeguard-db
+    plan: basic-256mb
+    databaseName: scopeguard
+    user: scopeguard

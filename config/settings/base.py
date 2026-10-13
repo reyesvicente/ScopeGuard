@@ -121,7 +121,8 @@ AUTHENTICATION_BACKENDS = [
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
 AUTH_USER_MODEL = "users.User"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
-LOGIN_REDIRECT_URL = "users:redirect"
+# Land on the React app after login.
+LOGIN_REDIRECT_URL = "/"
 # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
 LOGIN_URL = "account_login"
 
@@ -317,6 +318,10 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "scopeguard.core.pagination.StandardPagination",
     "EXCEPTION_HANDLER": "scopeguard.core.exceptions.envelope_exception_handler",
+    # Model calls are expensive on shared hardware; see ScopeCheckViewSet.get_throttles.
+    "DEFAULT_THROTTLE_RATES": {
+        "scope_checks": env("SCOPE_CHECK_THROTTLE_RATE", default="30/hour"),
+    },
 }
 
 # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
@@ -338,6 +343,8 @@ SPECTACULAR_SETTINGS = {
 # ------------------------------------------------------------------------------
 # Local open-weight model served by Ollama (https://ollama.com)
 OLLAMA_BASE_URL = env("OLLAMA_BASE_URL", default="http://ollama:11434")
+if "://" not in OLLAMA_BASE_URL:  # Render's private-network "hostport" has no scheme
+    OLLAMA_BASE_URL = f"http://{OLLAMA_BASE_URL}"
 OLLAMA_MODEL = env("OLLAMA_MODEL", default="gemma4:e4b")
 OLLAMA_TIMEOUT = env.int("OLLAMA_TIMEOUT", default=300)
 OLLAMA_NUM_CTX = env.int("OLLAMA_NUM_CTX", default=16384)

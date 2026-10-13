@@ -274,3 +274,9 @@ scopeguard/media/
 .ipython/
 .env
 .envs/*
+
+# Built React app (produced in the production Docker build)
+scopeguard/static/spa/
+
+# The Python "lib/" ignore above must not swallow the frontend source
+!frontend/src/lib/

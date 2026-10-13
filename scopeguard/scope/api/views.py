@@ -4,6 +4,7 @@ from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.viewsets import ModelViewSet
 
@@ -50,6 +51,13 @@ class ScopeCheckViewSet(
     serializer_class = ScopeCheckSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["request_text", "reasoning"]
+    throttle_scope = "scope_checks"
+
+    def get_throttles(self):
+        # Only the actions that call the model are rate limited.
+        if self.action in {"create", "rerun"}:
+            return [ScopedRateThrottle()]
+        return []
 
     def get_queryset(self):
         queryset = services.checks_for(self.request.user)
