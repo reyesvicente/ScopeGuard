@@ -341,10 +341,9 @@ SPECTACULAR_SETTINGS = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
-# Local open-weight model served by Ollama (https://ollama.com)
-OLLAMA_BASE_URL = env("OLLAMA_BASE_URL", default="http://ollama:11434")
-if "://" not in OLLAMA_BASE_URL:  # Render's private-network "hostport" has no scheme
-    OLLAMA_BASE_URL = f"http://{OLLAMA_BASE_URL}"
-OLLAMA_MODEL = env("OLLAMA_MODEL", default="gemma4:e4b")
-OLLAMA_TIMEOUT = env.int("OLLAMA_TIMEOUT", default=300)
-OLLAMA_NUM_CTX = env.int("OLLAMA_NUM_CTX", default=16384)
+# Hosted open-weight model behind an OpenAI-compatible API. The default is
+# Hugging Face Inference Providers; Groq, Together, or OpenRouter work too.
+LLM_BASE_URL = env("LLM_BASE_URL", default="https://router.huggingface.co/v1")
+LLM_API_KEY = env("LLM_API_KEY", default="")
+LLM_MODEL = env("LLM_MODEL", default="openai/gpt-oss-120b")
+LLM_TIMEOUT = env.int("LLM_TIMEOUT", default=120)

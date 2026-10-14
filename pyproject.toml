@@ -1,7 +1,7 @@
 [project]
 name = "scopeguard"
 version = "0.1.0"
-description = "Local-first scope-creep detector for freelancers, powered by open-weight Gemma."
+description = "Scope-creep detector for freelancers, powered by an open-weight model."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [

@@ -55,7 +55,7 @@ export function CheckForm({ contract }: { contract: string }) {
           htmlFor="request_text"
           required
           error={errors.request_text?.message ?? serverError?.fieldErrors.request_text?.[0]}
-          hint="Paste the email, Slack message, or ticket. It's checked by Gemma on your own machine."
+          hint="Paste the email, Slack message, or ticket. It's checked against the SOW by an open-weight model."
         >
           <Textarea
             id="request_text"

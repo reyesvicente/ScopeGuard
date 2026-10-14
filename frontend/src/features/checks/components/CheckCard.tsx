@@ -89,7 +89,7 @@ export function CheckCard({ check, currency }: CheckCardProps) {
             {check.model_name}
             {check.latency_ms !== null && ` · ${(check.latency_ms / 1000).toFixed(1)}s`}
             {check.prompt_tokens !== null &&
-              ` · ${check.prompt_tokens}+${check.completion_tokens ?? 0} tokens · $0.00`}
+              ` · ${check.prompt_tokens}+${check.completion_tokens ?? 0} tokens`}
           </span>
         )}
         <div className="ml-auto flex gap-2">

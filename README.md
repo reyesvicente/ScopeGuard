@@ -1,6 +1,6 @@
 # ScopeGuard
 
-Local-first scope-creep detector for freelancers, powered by open-weight Gemma.
+Scope-creep detector for freelancers, powered by a hosted open-weight model.
 
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -11,17 +11,16 @@ License: MIT
 
 1. Save a client's statement of work (SOW) and your hourly rate.
 2. Paste a client request (email, Slack, ticket).
-3. Gemma, running locally through [Ollama](https://ollama.com), returns a verdict (in scope / out of scope / ambiguous), quotes the SOW clause it relied on, estimates the extra hours, and drafts a reply.
+3. An open-weight model (default: `openai/gpt-oss-120b` via [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers)) returns a verdict (in scope / out of scope / ambiguous), quotes the SOW clause it relied on, estimates the extra hours, and drafts a reply.
 4. ScopeGuard checks that the quoted clause really exists in the SOW, and fills in the change-order price itself (the model never does the arithmetic).
 
-Contracts and client messages never leave the machine running ScopeGuard.
+The model API is OpenAI-compatible, so any provider that serves open weights with JSON-schema output (Hugging Face, Groq, Together, OpenRouter) works by changing three env vars.
 
 ## Quickstart (local)
 
 ```bash
 docker compose -f docker-compose.local.yml build
 docker compose -f docker-compose.local.yml up -d
-docker compose -f docker-compose.local.yml exec ollama ollama pull gemma4:e4b
 docker compose -f docker-compose.local.yml run --rm django python manage.py migrate
 
 cd frontend && npm install && npm run dev   # http://localhost:5173
@@ -31,12 +30,12 @@ Sign up at http://localhost:5173 (verification emails land in Mailpit at http://
 
 ### Model settings (`.envs/.local/.django`)
 
-| Variable          | Default               | Notes                                                   |
-| ----------------- | --------------------- | ------------------------------------------------------- |
-| `OLLAMA_MODEL`    | `gemma4:e4b`          | Use `gemma4:e2b` on machines with < 8 GB free RAM        |
-| `OLLAMA_BASE_URL` | `http://ollama:11434` |                                                         |
-| `OLLAMA_NUM_CTX`  | `16384`               | Ollama's default context is too small for a full SOW    |
-| `OLLAMA_TIMEOUT`  | `300`                 | Seconds; CPU inference on a long SOW can take a while   |
+| Variable       | Default                            | Notes                                         |
+| -------------- | ---------------------------------- | --------------------------------------------- |
+| `LLM_API_KEY`  | *(empty)*                          | Required, e.g. a Hugging Face token           |
+| `LLM_BASE_URL` | `https://router.huggingface.co/v1` | Any OpenAI-compatible `/chat/completions` API |
+| `LLM_MODEL`    | `openai/gpt-oss-120b`              | Must support JSON-schema `response_format`    |
+| `LLM_TIMEOUT`  | `120`                              | Seconds                                       |
 
 ### Deploy to Render
 
@@ -45,16 +44,14 @@ Sign up at http://localhost:5173 (verification emails land in Mailpit at http://
 | Service             | Type            | Purpose                                                   |
 | ------------------- | --------------- | --------------------------------------------------------- |
 | `scopeguard`        | Web (Docker)    | Django API + the React build (served from `/static/spa/`) |
-| `scopeguard-ollama` | Private service | Gemma via Ollama, with a 20 GB disk for model weights     |
 | `scopeguard-cache`  | Key Value       | Django cache + API throttling                             |
 | `scopeguard-db`     | PostgreSQL      | Database                                                  |
 
 1. In Render: **New → Blueprint**, pick this repo.
-2. Fill in the prompted secrets: `DJANGO_ADMIN_URL`, the S3, Mailgun and Sentry values.
-3. The first deploy of `scopeguard-ollama` downloads `gemma4:e2b` (~4.6 GB) to its disk; later deploys reuse it.
-4. Point a CNAME for `scopeguard.icvn.tech` at the `scopeguard` service's `onrender.com` hostname.
+2. Fill in the prompted secrets: `LLM_API_KEY`, `DJANGO_ADMIN_URL`, the S3, Mailgun and Sentry values.
+3. Point a CNAME for `scopeguard.icvn.tech` at the `scopeguard` service's `onrender.com` hostname.
 
-Inference is CPU-only on Render, so a check takes tens of seconds; `SCOPE_CHECK_THROTTLE_RATE` (default `30/hour` per user) caps model usage.
+`SCOPE_CHECK_THROTTLE_RATE` (default `30/hour` per user) caps model API spend.
 
 ### API
 

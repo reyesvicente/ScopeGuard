@@ -27,7 +27,7 @@ def fake_result(**overrides) -> llm.LLMResult:
     content.update(overrides)
     return llm.LLMResult(
         content=content,
-        model="gemma4:e4b",
+        model="openai/gpt-oss-120b",
         latency_ms=FAKE_LATENCY_MS,
         prompt_tokens=500,
         completion_tokens=120,

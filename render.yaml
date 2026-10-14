@@ -1,7 +1,6 @@
 # Render Blueprint for ScopeGuard — https://render.com/docs/blueprint-spec
 #
 # scopeguard          Django API + React SPA (public, custom domain)
-# scopeguard-ollama   Gemma via Ollama on Render's private network (never public)
 # scopeguard-cache    Key Value (Redis) for Django's cache and API throttling
 # scopeguard-db       PostgreSQL
 
@@ -36,18 +35,13 @@ services:
           type: keyvalue
           name: scopeguard-cache
           property: connectionString
-      # Ollama
-      - key: OLLAMA_BASE_URL
-        fromService:
-          type: pserv
-          name: scopeguard-ollama
-          property: hostport
-      - key: OLLAMA_MODEL
-        value: gemma4:e2b
-      - key: OLLAMA_NUM_CTX
-        value: "16384"
-      - key: OLLAMA_TIMEOUT
-        value: "300"
+      # Hosted open-weight model (OpenAI-compatible API)
+      - key: LLM_BASE_URL
+        value: https://router.huggingface.co/v1
+      - key: LLM_MODEL
+        value: openai/gpt-oss-120b
+      - key: LLM_API_KEY
+        sync: false
       - key: SCOPE_CHECK_THROTTLE_RATE
         value: 30/hour
       - key: WEB_CONCURRENCY
@@ -71,26 +65,6 @@ services:
         sync: false
       - key: SENTRY_TRACES_SAMPLE_RATE
         value: "0.2"
-
-  - type: pserv
-    name: scopeguard-ollama
-    runtime: docker
-    # CPU-only inference: gemma4:e2b needs ~8 GB RAM including a 16k context.
-    plan: pro plus
-    dockerfilePath: ./compose/production/ollama/Dockerfile
-    dockerContext: ./compose/production/ollama
-    disk:
-      name: ollama-models
-      mountPath: /root/.ollama
-      sizeGB: 20
-    envVars:
-      - key: OLLAMA_MODEL
-        value: gemma4:e2b
-      # Keep the model loaded so checks don't pay a cold-start each time.
-      - key: OLLAMA_KEEP_ALIVE
-        value: "-1"
-      - key: OLLAMA_NUM_PARALLEL
-        value: "1"
 
   - type: keyvalue
     name: scopeguard-cache

@@ -15,11 +15,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
         <h1 className="font-display text-5xl font-bold leading-none">Stop doing free work.</h1>
         <p className="text-lg">
           ScopeGuard checks client requests against your statement of work and drafts the change order
-          for you — using an open-weight model that runs on your own machine.
+          for you — using an open-weight model.
         </p>
         <Card className="flex flex-col gap-4 p-6">
           <CardTitle>Get started</CardTitle>
-          <CardDescription>Your contracts and client messages stay on your server.</CardDescription>
+          <CardDescription>Your contracts and client messages are never used for training.</CardDescription>
           <div className="flex gap-3">
             <a href={LOGIN_URL}>
               <Button type="button">Log in</Button>

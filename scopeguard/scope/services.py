@@ -84,7 +84,7 @@ def run_scope_check(
 
 
 def evaluate_scope_check(check: ScopeCheck) -> ScopeCheck:
-    """Ask the local model for a verdict and store it on `check`."""
+    """Ask the model for a verdict and store it on `check`."""
     contract = check.contract
     prompt = USER_TEMPLATE.format(
         client_name=contract.client_name,

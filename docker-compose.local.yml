@@ -1,7 +1,6 @@
 volumes:
   scopeguard_local_postgres_data: {}
   scopeguard_local_postgres_data_backups: {}
-  scopeguard_local_ollama_models: {}
   
 
 services:
@@ -14,7 +13,6 @@ services:
     depends_on:
       - postgres
       - mailpit
-      - ollama
     volumes:
       - /app/.venv
       - .:/app:z
@@ -46,18 +44,3 @@ services:
     ports:
       - "8025:8025"
 
-  ollama:
-    image: docker.io/ollama/ollama:latest
-    container_name: scopeguard_local_ollama
-    volumes:
-      - scopeguard_local_ollama_models:/root/.ollama
-    ports:
-      - "11434:11434"
-    # Uncomment to use an NVIDIA GPU (requires nvidia-container-toolkit):
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
