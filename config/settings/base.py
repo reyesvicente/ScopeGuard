@@ -352,8 +352,8 @@ SPECTACULAR_SETTINGS = {
 # Your stuff...
 # ------------------------------------------------------------------------------
 # Hosted open-weight model behind an OpenAI-compatible API. The default is
-# Hugging Face Inference Providers; Groq, Together, or OpenRouter work too.
-LLM_BASE_URL = env("LLM_BASE_URL", default="https://router.huggingface.co/v1")
+# Groq; Hugging Face Inference Providers, Together, or OpenRouter work too.
+LLM_BASE_URL = env("LLM_BASE_URL", default="https://api.groq.com/openai/v1")
 LLM_API_KEY = env("LLM_API_KEY", default="")
 LLM_MODEL = env("LLM_MODEL", default="openai/gpt-oss-120b")
 LLM_TIMEOUT = env.int("LLM_TIMEOUT", default=120)

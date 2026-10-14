@@ -43,7 +43,7 @@ services:
           property: connectionString
       # Hosted open-weight model (OpenAI-compatible API)
       - key: LLM_BASE_URL
-        value: https://router.huggingface.co/v1
+        value: https://api.groq.com/openai/v1
       - key: LLM_MODEL
         value: openai/gpt-oss-120b
       - key: LLM_API_KEY

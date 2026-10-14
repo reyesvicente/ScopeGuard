@@ -1,21 +1,26 @@
 # TODO
 
-## Get a model API key (Hugging Face, the default)
+## Get a model API key (Groq, the default)
 
-- [x] Sign in or create a free account at https://huggingface.co
-- [x] Open **Settings → Access Tokens**: https://huggingface.co/settings/tokens
-- [x] **Create new token** → type **Fine-grained**
-- [x] Tick only **"Make calls to Inference Providers"**
-- [x] Copy the token (starts with `hf_`). It is shown only once.
-- [x] Local: add it to `.envs/.local/.django` (gitignored), then restart the stack:
+Hugging Face ran out of free credits (402), so the default is now Groq, which serves the same `openai/gpt-oss-120b` model on a free tier.
+
+- [ ] Sign in or create a free account at https://console.groq.com
+- [ ] Open **API Keys**: https://console.groq.com/keys
+- [ ] **Create API Key**, give it a name (e.g. `scopeguard-local`)
+- [ ] Copy the key (starts with `gsk_`). It is shown only once.
+- [ ] Local: in `.envs/.local/.django` (gitignored), replace the old `hf_` key and point at Groq:
   ```
-  LLM_API_KEY=hf_your_token_here
+  LLM_BASE_URL=https://api.groq.com/openai/v1
+  LLM_MODEL=openai/gpt-oss-120b
+  LLM_API_KEY=gsk_your_key_here
   ```
+  Then recreate the Django container so it picks up the change:
   ```bash
-  docker compose -f docker-compose.local.yml up
+  docker compose -f docker-compose.local.yml up -d --force-recreate django
   ```
-- [x] Render: paste it (or a separate token) into the `LLM_API_KEY` prompt when creating the Blueprint. Never commit it.
-- [x] Check the free monthly inference credit at https://huggingface.co/settings/billing. Usage beyond it needs a payment method or PRO.
+- [ ] Re-run a failed check in the app and confirm it gets a verdict
+- [ ] Render: create a separate key (e.g. `scopeguard-prod`) and paste it into the `LLM_API_KEY` prompt when creating the Blueprint. Never commit it.
+- [ ] Check the free tier's rate limits at https://console.groq.com/settings/limits. If judges hit them, the app shows a readable error and a Re-run button.
 
 ### Other providers (optional)
 
@@ -23,13 +28,13 @@ Get a key from the provider, then change all three of `LLM_API_KEY`, `LLM_BASE_U
 
 | Provider   | Key page                           | `LLM_BASE_URL`                   |
 | ---------- | ---------------------------------- | -------------------------------- |
-| Groq       | console.groq.com/keys              | `https://api.groq.com/openai/v1` |
+| Hugging Face | huggingface.co/settings/tokens   | `https://router.huggingface.co/v1` |
 | Together   | api.together.ai/settings/api-keys  | `https://api.together.xyz/v1`    |
 | OpenRouter | openrouter.ai/settings/keys        | `https://openrouter.ai/api/v1`   |
 
 ## Before publishing the blog post
 
 - [ ] Run one real scope check and confirm the provider honours the JSON schema
-- [ ] Deploy to Render and point `scopeguard.icvn.tech` at it (the post says it's live)
+- [ ] Deploy the API to Render (`api.scopeguard.icvn.tech`) and the frontend to Vercel (`scopeguard.icvn.tech`); the post says it's live
 - [ ] Confirm "a fraction of a cent per check" against current token pricing
 - [ ] Add screenshots of the dashboard and an out-of-scope result card

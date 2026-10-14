@@ -11,7 +11,7 @@ License: MIT
 
 1. Save a client's statement of work (SOW) and your hourly rate.
 2. Paste a client request (email, Slack, ticket, call notes).
-3. An open-weight model (default: `openai/gpt-oss-120b` via [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers)) returns a verdict (in scope / out of scope / ambiguous), quotes the SOW clause it relied on, estimates the extra hours, and drafts a reply.
+3. An open-weight model (default: `openai/gpt-oss-120b` via [Groq](https://console.groq.com/docs/models)) returns a verdict (in scope / out of scope / ambiguous), quotes the SOW clause it relied on, estimates the extra hours, and drafts a reply.
 4. ScopeGuard checks that the quoted clause really exists in the SOW, and fills in the change-order price itself (the model never does the arithmetic).
 
 The dashboard totals the out-of-scope hours caught across all your contracts.
@@ -36,11 +36,11 @@ The dashboard totals the out-of-scope hours caught across all your contracts.
 
 Backend commands run through Docker Compose only; the frontend runs on the host.
 
-1. Get a model API key. Step-by-step instructions are in [`todo.md`](todo.md); the short version is a fine-grained Hugging Face token with **"Make calls to Inference Providers"** at https://huggingface.co/settings/tokens.
+1. Get a model API key. Step-by-step instructions are in [`todo.md`](todo.md); the short version is a Groq API key from https://console.groq.com/keys (the free tier is enough for development).
 2. Add it to `.envs/.local/.django` (gitignored, never commit it):
 
    ```bash
-   LLM_API_KEY=hf_your_token_here
+   LLM_API_KEY=gsk_your_key_here
    ```
 
 3. Start the stack:
@@ -66,17 +66,17 @@ docker compose -f docker-compose.local.yml up -d --force-recreate django
 | Variable       | Default                            | Notes                                         |
 | -------------- | ---------------------------------- | --------------------------------------------- |
 | `LLM_API_KEY`  | *(empty)*                          | Required; checks fail with a clear error without it |
-| `LLM_BASE_URL` | `https://router.huggingface.co/v1` | Any OpenAI-compatible `/chat/completions` API |
+| `LLM_BASE_URL` | `https://api.groq.com/openai/v1`   | Any OpenAI-compatible `/chat/completions` API |
 | `LLM_MODEL`    | `openai/gpt-oss-120b`              | Must support JSON-schema `response_format`    |
 | `LLM_TIMEOUT`  | `120`                              | Seconds                                       |
 | `SCOPE_CHECK_THROTTLE_RATE` | `30/hour`             | Per user; caps model API spend                |
 
 To switch providers, change `LLM_API_KEY`, `LLM_BASE_URL` and `LLM_MODEL` together, using the provider's exact model ID:
 
-| Provider   | `LLM_BASE_URL`                   |
-| ---------- | -------------------------------- |
-| Groq       | `https://api.groq.com/openai/v1` |
-| Together   | `https://api.together.xyz/v1`    |
+| Provider     | `LLM_BASE_URL`                     |
+| ------------ | ---------------------------------- |
+| Hugging Face | `https://router.huggingface.co/v1` |
+| Together     | `https://api.together.xyz/v1`      |
 | OpenRouter | `https://openrouter.ai/api/v1`   |
 
 Self-hosting the same weights with vLLM or Ollama works too: point `LLM_BASE_URL` at their OpenAI-compatible endpoint.
