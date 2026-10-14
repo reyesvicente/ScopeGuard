@@ -10,114 +10,127 @@ License: MIT
 ## How it works
 
 1. Save a client's statement of work (SOW) and your hourly rate.
-2. Paste a client request (email, Slack, ticket).
+2. Paste a client request (email, Slack, ticket, call notes).
 3. An open-weight model (default: `openai/gpt-oss-120b` via [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers)) returns a verdict (in scope / out of scope / ambiguous), quotes the SOW clause it relied on, estimates the extra hours, and drafts a reply.
 4. ScopeGuard checks that the quoted clause really exists in the SOW, and fills in the change-order price itself (the model never does the arithmetic).
 
-The model API is OpenAI-compatible, so any provider that serves open weights with JSON-schema output (Hugging Face, Groq, Together, OpenRouter) works by changing three env vars.
+The dashboard totals the out-of-scope hours caught across all your contracts.
+
+### Guardrails
+
+- **Constrained output.** The request sends a JSON Schema as `response_format`, and every field is validated again in `scopeguard/scope/services.py`.
+- **Code does the math.** The model writes `{{ESTIMATE}}` where a price belongs; Python computes hours × rate.
+- **Verified quotes.** A cited clause that isn't in the SOW is flagged in the UI instead of shown as fact.
+- **Loud failures.** API errors, timeouts and bad output save the check as `failed` with a readable error and a **Re-run** button.
+
+## Stack
+
+| Layer     | Choice                                                                          |
+| --------- | ------------------------------------------------------------------------------- |
+| Model     | Any open-weight model behind an OpenAI-compatible `/chat/completions` API       |
+| Backend   | Django + Django REST Framework (cookiecutter-django), PostgreSQL                 |
+| Frontend  | React 18 + Vite + TypeScript, TanStack Query, Zustand, React Hook Form + Zod     |
+| Hosting   | Render (web service, PostgreSQL, Key Value)                                     |
 
 ## Quickstart (local)
 
-```bash
-docker compose -f docker-compose.local.yml build
-docker compose -f docker-compose.local.yml up -d
-docker compose -f docker-compose.local.yml run --rm django python manage.py migrate
+Backend commands run through Docker Compose only; the frontend runs on the host.
 
-cd frontend && npm install && npm run dev   # http://localhost:5173
+1. Get a model API key. Step-by-step instructions are in [`todo.md`](todo.md); the short version is a fine-grained Hugging Face token with **"Make calls to Inference Providers"** at https://huggingface.co/settings/tokens.
+2. Add it to `.envs/.local/.django` (gitignored, never commit it):
+
+   ```bash
+   LLM_API_KEY=hf_your_token_here
+   ```
+
+3. Start the stack:
+
+   ```bash
+   docker compose -f docker-compose.local.yml build
+   docker compose -f docker-compose.local.yml up -d
+   docker compose -f docker-compose.local.yml run --rm django python manage.py migrate
+
+   cd frontend && npm install && npm run dev   # http://localhost:5173
+   ```
+
+4. Sign up at http://localhost:5173. The verification email lands in Mailpit at http://localhost:8025.
+
+If you change `.envs/.local/.django` while the stack is running, recreate the container so Django sees it:
+
+```bash
+docker compose -f docker-compose.local.yml up -d --force-recreate django
 ```
 
-Sign up at http://localhost:5173 (verification emails land in Mailpit at http://localhost:8025).
-
-### Model settings (`.envs/.local/.django`)
+### Model settings
 
 | Variable       | Default                            | Notes                                         |
 | -------------- | ---------------------------------- | --------------------------------------------- |
-| `LLM_API_KEY`  | *(empty)*                          | Required, e.g. a Hugging Face token           |
+| `LLM_API_KEY`  | *(empty)*                          | Required; checks fail with a clear error without it |
 | `LLM_BASE_URL` | `https://router.huggingface.co/v1` | Any OpenAI-compatible `/chat/completions` API |
 | `LLM_MODEL`    | `openai/gpt-oss-120b`              | Must support JSON-schema `response_format`    |
 | `LLM_TIMEOUT`  | `120`                              | Seconds                                       |
+| `SCOPE_CHECK_THROTTLE_RATE` | `30/hour`             | Per user; caps model API spend                |
 
-### Deploy to Render
+To switch providers, change `LLM_API_KEY`, `LLM_BASE_URL` and `LLM_MODEL` together, using the provider's exact model ID:
 
-`render.yaml` is a [Blueprint](https://render.com/docs/blueprint-spec) for the whole stack:
+| Provider   | `LLM_BASE_URL`                   |
+| ---------- | -------------------------------- |
+| Groq       | `https://api.groq.com/openai/v1` |
+| Together   | `https://api.together.xyz/v1`    |
+| OpenRouter | `https://openrouter.ai/api/v1`   |
 
-| Service             | Type            | Purpose                                                   |
-| ------------------- | --------------- | --------------------------------------------------------- |
-| `scopeguard`        | Web (Docker)    | Django API + the React build (served from `/static/spa/`) |
-| `scopeguard-cache`  | Key Value       | Django cache + API throttling                             |
-| `scopeguard-db`     | PostgreSQL      | Database                                                  |
+Self-hosting the same weights with vLLM or Ollama works too: point `LLM_BASE_URL` at their OpenAI-compatible endpoint.
 
-1. In Render: **New → Blueprint**, pick this repo.
-2. Fill in the prompted secrets: `LLM_API_KEY`, `DJANGO_ADMIN_URL`, the S3, Mailgun and Sentry values.
-3. Point a CNAME for `scopeguard.icvn.tech` at the `scopeguard` service's `onrender.com` hostname.
+## Development
 
-`SCOPE_CHECK_THROTTLE_RATE` (default `30/hour` per user) caps model API spend.
+```bash
+# Tests
+docker compose -f docker-compose.local.yml run --rm django pytest
 
-### API
+# Lint and type check
+docker compose -f docker-compose.local.yml run --rm django ruff check .
+docker compose -f docker-compose.local.yml run --rm django mypy scopeguard
 
-All endpoints live under `/api/` and return `{"data": ..., "message": "", "errors": null}`.
+# Superuser and shell
+docker compose -f docker-compose.local.yml run --rm django python manage.py createsuperuser
+docker compose -f docker-compose.local.yml run --rm django python manage.py shell_plus
+
+# Frontend
+cd frontend && npm run typecheck && npm run build
+```
+
+The model call is mocked in tests, so the suite runs without an API key.
+
+### Where things live
+
+| Path                              | What                                                    |
+| --------------------------------- | ------------------------------------------------------- |
+| `scopeguard/scope/llm.py`         | OpenAI-compatible model client (stdlib only, no SDK)    |
+| `scopeguard/scope/prompts.py`     | System prompt, user template, JSON Schema               |
+| `scopeguard/scope/services.py`    | Business logic: running checks, pricing, quote checks   |
+| `scopeguard/scope/api/`           | DRF serializers, viewsets, routes                       |
+| `frontend/src/features/`          | Contracts and checks UI, API hooks, state               |
+| `config/settings/`                | Django settings (`base`, `local`, `production`, `test`) |
+
+## API
+
+All endpoints live under `/api/` and return `{"data": ..., "message": "", "errors": null}`. List endpoints are paginated.
 
 - `GET/POST /api/contracts/` · `GET/PATCH/DELETE /api/contracts/<slug>/` (`?search=`, `?ordering=`)
 - `GET/POST /api/scope-checks/` (`?contract=<slug>&verdict=out_of_scope&search=`) · `POST /api/scope-checks/<id>/rerun/`
 
-## Settings
+## Deploy to Render
 
-Moved to [settings](https://cookiecutter-django.readthedocs.io/en/latest/1-getting-started/settings.html).
+`render.yaml` is a [Blueprint](https://render.com/docs/blueprint-spec) for the whole stack:
 
-## Basic Commands
+| Service            | Type         | Purpose                                                   |
+| ------------------ | ------------ | --------------------------------------------------------- |
+| `scopeguard`       | Web (Docker) | Django API + the React build (served from `/static/spa/`) |
+| `scopeguard-cache` | Key Value    | Django cache + API throttling                             |
+| `scopeguard-db`    | PostgreSQL   | Database                                                  |
 
-### Setting Up Your Users
+1. In Render: **New → Blueprint**, pick this repo.
+2. Fill in the prompted secrets: `LLM_API_KEY`, `DJANGO_ADMIN_URL`, and the S3, Mailgun and Sentry values.
+3. Point a CNAME for `scopeguard.icvn.tech` at the `scopeguard` service's `onrender.com` hostname.
 
-- To create a **normal user account**, just go to Sign Up and fill out the form. Once you submit it, you'll see a "Verify Your E-mail Address" page. Go to your console to see a simulated email verification message. Copy the link into your browser. Now the user's email should be verified and ready to go.
-
-- To create a **superuser account**, use this command:
-
-      uv run python manage.py createsuperuser
-
-For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar), so that you can see how the site behaves for both kinds of users.
-
-### Type checks
-
-Running type checks with mypy:
-
-    uv run mypy scopeguard
-
-### Test coverage
-
-To run the tests, check your test coverage, and generate an HTML coverage report:
-
-    uv run coverage run -m pytest
-    uv run coverage html
-    uv run open htmlcov/index.html
-
-#### Running tests with pytest
-
-    uv run pytest
-
-### Live reloading and Sass CSS compilation
-
-Moved to [Live reloading and SASS compilation](https://cookiecutter-django.readthedocs.io/en/latest/2-local-development/developing-locally.html#using-webpack-or-gulp).
-
-### Email Server
-
-In development, it is often nice to be able to see emails that are being sent from your application. For that reason local SMTP server [Mailpit](https://github.com/axllent/mailpit) with a web interface is available as docker container.
-
-Container mailpit will start automatically when you will run all docker containers.
-Please check [cookiecutter-django Docker documentation](https://cookiecutter-django.readthedocs.io/en/latest/2-local-development/developing-locally-docker.html) for more details how to start all containers.
-
-With Mailpit running, to view messages that are sent by your application, open your browser and go to `http://127.0.0.1:8025`
-
-### Sentry
-
-Sentry is an error logging aggregator service. You can sign up for a free account at <https://sentry.io/signup/?code=cookiecutter> or download and host it yourself.
-The system is set up with reasonable defaults, including 404 logging and integration with the WSGI application.
-
-You must set the DSN url in production.
-
-## Deployment
-
-The following details how to deploy this application.
-
-### Docker
-
-See detailed [cookiecutter-django Docker documentation](https://cookiecutter-django.readthedocs.io/en/latest/3-deployment/deployment-with-docker.html).
+Migrations run automatically as a pre-deploy step.
