@@ -20,3 +20,8 @@ export interface ContractInput {
   hourly_rate: string;
   currency: string;
 }
+
+export interface ExtractedSow {
+  filename: string;
+  text: string;
+}

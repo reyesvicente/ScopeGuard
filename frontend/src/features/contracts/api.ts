@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, toQuery, type Paginated } from "../../lib/api";
-import type { Contract, ContractInput } from "./types";
+import type { Contract, ContractInput, ExtractedSow } from "./types";
 
 export const contractKeys = {
   all: ["contracts"] as const,
@@ -37,5 +37,16 @@ export function useDeleteContract() {
   return useMutation({
     mutationFn: (slug: string) => api<void>(`/contracts/${slug}/`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: contractKeys.all }),
+  });
+}
+
+/** Upload a PDF/DOCX/TXT/MD and get its text back. The server doesn't keep the file. */
+export function useExtractSow() {
+  return useMutation({
+    mutationFn: (file: File) => {
+      const body = new FormData();
+      body.append("file", file);
+      return api<ExtractedSow>("/contracts/extract-sow/", { method: "POST", body });
+    },
   });
 }

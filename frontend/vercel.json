@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://api.scopeguard.icvn.tech/api/$1" },
+    { "source": "/accounts/(.*)", "destination": "https://api.scopeguard.icvn.tech/accounts/$1" },
+    { "source": "/static/(.*)", "destination": "https://api.scopeguard.icvn.tech/static/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

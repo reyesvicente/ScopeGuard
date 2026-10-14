@@ -15,6 +15,8 @@ export interface Paginated<T> {
 
 export type FieldErrors = Record<string, string[]>;
 
+const NON_FIELD_KEYS = new Set(["detail", "non_field_errors"]);
+
 export class ApiError extends Error {
   readonly status: number;
   readonly errors: unknown;
@@ -26,12 +28,18 @@ export class ApiError extends Error {
     this.errors = errors;
   }
 
-  /** DRF validation errors keyed by field, when the response has them. */
+  /**
+   * DRF validation errors keyed by field. `detail` (auth, permission, CSRF) and
+   * `non_field_errors` aren't about a field, so they're left to `message`.
+   */
   get fieldErrors(): FieldErrors {
-    if (this.errors && typeof this.errors === "object" && !Array.isArray(this.errors)) {
-      return this.errors as FieldErrors;
+    if (!this.errors || typeof this.errors !== "object" || Array.isArray(this.errors)) return {};
+    const fields: FieldErrors = {};
+    for (const [key, value] of Object.entries(this.errors)) {
+      if (NON_FIELD_KEYS.has(key) || !Array.isArray(value)) continue;
+      fields[key] = value.map(String);
     }
-    return {};
+    return fields;
   }
 }
 
@@ -44,12 +52,19 @@ function getCookie(name: string): string | undefined {
 
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
+function isCsrfFailure(status: number, envelope: Envelope<unknown>): boolean {
+  return status === 403 && envelope.message.startsWith("CSRF Failed");
+}
+
 export async function api<T>(
   path: string,
   { method = "GET", body }: { method?: Method; body?: unknown } = {},
+  retried = false,
 ): Promise<T> {
+  const isForm = body instanceof FormData;
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  // The browser sets the multipart boundary itself for FormData.
+  if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
   if (method !== "GET") {
     // Production uses the __Secure- prefixed cookie name (see CSRF_COOKIE_NAME).
     headers["X-CSRFToken"] = getCookie("__Secure-csrftoken") ?? getCookie("csrftoken") ?? "";
@@ -59,7 +74,7 @@ export async function api<T>(
     method,
     headers,
     credentials: "same-origin",
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
   });
 
   if (response.status === 204) return undefined as T;
@@ -71,10 +86,26 @@ export async function api<T>(
     throw new ApiError(`Unexpected response (${response.status})`, response.status, null);
   }
 
+  if (!response.ok && !retried && isCsrfFailure(response.status, envelope)) {
+    // The CSRF cookie was missing or stale. /users/me/ reissues it; try once more.
+    await fetch("/api/users/me/", { credentials: "same-origin" });
+    return api<T>(path, { method, body }, true);
+  }
   if (!response.ok) {
-    throw new ApiError(envelope.message || "Request failed.", response.status, envelope.errors);
+    throw new ApiError(errorMessage(response.status, envelope), response.status, envelope.errors);
   }
   return envelope.data;
+}
+
+function errorMessage(status: number, envelope: Envelope<unknown>): string {
+  if (isCsrfFailure(status, envelope)) {
+    return "Your session expired. Reload the page and try again.";
+  }
+  const errors = envelope.errors as { non_field_errors?: unknown } | null;
+  if (Array.isArray(errors?.non_field_errors) && errors.non_field_errors.length > 0) {
+    return String(errors.non_field_errors[0]);
+  }
+  return envelope.message || `Request failed (${status}).`;
 }
 
 export function toQuery(params: Record<string, string | number | undefined>): string {

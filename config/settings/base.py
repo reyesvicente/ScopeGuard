@@ -229,7 +229,9 @@ FIXTURE_DIRS = (str(APPS_DIR / "fixtures"),)
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-httponly
 SESSION_COOKIE_HTTPONLY = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-httponly
-CSRF_COOKIE_HTTPONLY = True
+# The React SPA reads this cookie to send X-CSRFToken on writes. HttpOnly here
+# adds no real protection (Django's docs say so) and breaks every POST.
+CSRF_COOKIE_HTTPONLY = False
 # https://docs.djangoproject.com/en/dev/ref/settings/#x-frame-options
 X_FRAME_OPTIONS = "DENY"
 
@@ -324,10 +326,18 @@ REST_FRAMEWORK = {
     },
 }
 
+# Public origin of the React SPA (e.g. https://scopeguard.icvn.tech on Vercel).
+# The SPA proxies /api, /accounts and /static here, so the browser stays
+# same-origin; links in emails are rewritten to this origin (see AccountAdapter).
+FRONTEND_URL = env("FRONTEND_URL", default="").rstrip("/")
+
 # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
+# Only needed for clients that call the API host directly instead of the proxy.
 CORS_URLS_REGEX = r"^/api/.*$"
+CORS_ALLOWED_ORIGINS = env.list("DJANGO_CORS_ALLOWED_ORIGINS", default=[])
+CORS_ALLOW_CREDENTIALS = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-trusted-origins
-# Origins the React SPA is served from (e.g. https://scopeguard.tech).
+# Origins the React SPA is served from (e.g. https://scopeguard.icvn.tech).
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 # By Default swagger ui is available only to admin user(s). You can change permission classes to change that

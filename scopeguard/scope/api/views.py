@@ -3,17 +3,22 @@ from rest_framework import filters
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.viewsets import ModelViewSet
 
+from scopeguard.scope import documents
 from scopeguard.scope import services
 from scopeguard.scope.models import ScopeCheck
 
 from .serializers import ContractSerializer
 from .serializers import ScopeCheckCreateSerializer
 from .serializers import ScopeCheckSerializer
+from .serializers import SowTextSerializer
+from .serializers import SowUploadSerializer
 
 
 class ContractViewSet(ModelViewSet):
@@ -38,6 +43,24 @@ class ContractViewSet(ModelViewSet):
             self.get_serializer(contract).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @extend_schema(request=SowUploadSerializer, responses=SowTextSerializer)
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="extract-sow",
+        parser_classes=[MultiPartParser],
+    )
+    def extract_sow(self, request):
+        """Read a PDF/DOCX/TXT/MD and return its text. The file is not stored."""
+        serializer = SowUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        upload = serializer.validated_data["file"]
+        try:
+            text = documents.extract_text(upload, upload.name)
+        except documents.DocumentError as exc:
+            raise ValidationError({"file": [str(exc)]}) from exc
+        return Response(SowTextSerializer({"filename": upload.name, "text": text}).data)
 
 
 class ScopeCheckViewSet(

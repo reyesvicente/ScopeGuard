@@ -2,20 +2,20 @@
 
 ## Get a model API key (Hugging Face, the default)
 
-- [ ] Sign in or create a free account at https://huggingface.co
-- [ ] Open **Settings → Access Tokens**: https://huggingface.co/settings/tokens
-- [ ] **Create new token** → type **Fine-grained**
-- [ ] Tick only **"Make calls to Inference Providers"**
-- [ ] Copy the token (starts with `hf_`). It is shown only once.
-- [ ] Local: add it to `.envs/.local/.django` (gitignored), then restart the stack:
+- [x] Sign in or create a free account at https://huggingface.co
+- [x] Open **Settings → Access Tokens**: https://huggingface.co/settings/tokens
+- [x] **Create new token** → type **Fine-grained**
+- [x] Tick only **"Make calls to Inference Providers"**
+- [x] Copy the token (starts with `hf_`). It is shown only once.
+- [x] Local: add it to `.envs/.local/.django` (gitignored), then restart the stack:
   ```
   LLM_API_KEY=hf_your_token_here
   ```
   ```bash
   docker compose -f docker-compose.local.yml up
   ```
-- [ ] Render: paste it (or a separate token) into the `LLM_API_KEY` prompt when creating the Blueprint. Never commit it.
-- [ ] Check the free monthly inference credit at https://huggingface.co/settings/billing. Usage beyond it needs a payment method or PRO.
+- [x] Render: paste it (or a separate token) into the `LLM_API_KEY` prompt when creating the Blueprint. Never commit it.
+- [x] Check the free monthly inference credit at https://huggingface.co/settings/billing. Usage beyond it needs a payment method or PRO.
 
 ### Other providers (optional)
 

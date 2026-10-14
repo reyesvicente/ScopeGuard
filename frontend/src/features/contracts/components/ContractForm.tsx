@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ApiError } from "../../../lib/api";
 import { useCreateContract } from "../api";
 import type { Contract } from "../types";
+import { SowFileImport } from "./SowFileImport";
 
 // Mirrors ContractSerializer / the Contract model's constraints.
 const schema = z.object({
@@ -31,6 +32,7 @@ export function ContractForm({ onCreated }: { onCreated: (contract: Contract) =>
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -49,11 +51,16 @@ export function ContractForm({ onCreated }: { onCreated: (contract: Contract) =>
     }),
   );
 
+  // Anything the form can't pin to an input (403s, 500s, network errors) shows as a banner.
+  const error = createContract.error;
   const generalError =
-    createContract.error instanceof ApiError &&
-    Object.keys(createContract.error.fieldErrors).length === 0
-      ? createContract.error.message
-      : null;
+    error instanceof ApiError
+      ? Object.keys(error.fieldErrors).some((field) => field in schema.shape)
+        ? null
+        : error.message
+      : error
+        ? "Couldn't reach the server. Check your connection and try again."
+        : null;
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
@@ -70,9 +77,16 @@ export function ContractForm({ onCreated }: { onCreated: (contract: Contract) =>
         htmlFor="sow_text"
         required
         error={errors.sow_text?.message}
-        hint="Paste the deliverables, exclusions, and revision limits. It never leaves your server."
+        hint="Paste or import the deliverables, exclusions, and revision limits."
       >
-        <Textarea id="sow_text" rows={14} className="font-mono" {...register("sow_text")} />
+        <div className="flex flex-col gap-3">
+          <SowFileImport
+            onText={(text) =>
+              setValue("sow_text", text, { shouldDirty: true, shouldValidate: true })
+            }
+          />
+          <Textarea id="sow_text" rows={14} className="font-mono" {...register("sow_text")} />
+        </div>
       </Field>
       <div className="grid gap-5 md:grid-cols-2">
         <Field

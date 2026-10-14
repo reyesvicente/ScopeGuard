@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from rest_framework import serializers
 
+from scopeguard.scope import documents
 from scopeguard.scope import services
 from scopeguard.scope.models import Contract
 from scopeguard.scope.models import ScopeCheck
@@ -40,6 +43,25 @@ class ContractSerializer(serializers.ModelSerializer):
             contract=obj,
         )
         return None if cost is None else str(cost)
+
+
+class SowUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
+    def validate_file(self, file):
+        if Path(file.name).suffix.lower() not in documents.SUPPORTED_EXTENSIONS:
+            msg = "Upload a PDF, Word (.docx), text or Markdown file."
+            raise serializers.ValidationError(msg)
+        if file.size > documents.MAX_UPLOAD_BYTES:
+            limit_mb = documents.MAX_UPLOAD_BYTES // (1024 * 1024)
+            msg = f"Files are limited to {limit_mb} MB."
+            raise serializers.ValidationError(msg)
+        return file
+
+
+class SowTextSerializer(serializers.Serializer):
+    filename = serializers.CharField()
+    text = serializers.CharField()
 
 
 class ScopeCheckSerializer(serializers.ModelSerializer):

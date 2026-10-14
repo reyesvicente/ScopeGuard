@@ -117,20 +117,42 @@ The model call is mocked in tests, so the suite runs without an API key.
 All endpoints live under `/api/` and return `{"data": ..., "message": "", "errors": null}`. List endpoints are paginated.
 
 - `GET/POST /api/contracts/` · `GET/PATCH/DELETE /api/contracts/<slug>/` (`?search=`, `?ordering=`)
+- `POST /api/contracts/extract-sow/` (multipart `file`: PDF, DOCX, TXT or MD, up to 10 MB) returns `{filename, text}`. The file isn't stored.
 - `GET/POST /api/scope-checks/` (`?contract=<slug>&verdict=out_of_scope&search=`) · `POST /api/scope-checks/<id>/rerun/`
 
-## Deploy to Render
+## Deploy
 
-`render.yaml` is a [Blueprint](https://render.com/docs/blueprint-spec) for the whole stack:
+The frontend runs on **Vercel** at `scopeguard.icvn.tech`, and the Django API on **Render** at `api.scopeguard.icvn.tech`.
 
-| Service            | Type         | Purpose                                                   |
-| ------------------ | ------------ | --------------------------------------------------------- |
-| `scopeguard`       | Web (Docker) | Django API + the React build (served from `/static/spa/`) |
-| `scopeguard-cache` | Key Value    | Django cache + API throttling                             |
-| `scopeguard-db`    | PostgreSQL   | Database                                                  |
+`frontend/vercel.json` rewrites `/api/*`, `/accounts/*` and `/static/*` to the API host, the same way the Vite dev server proxies them locally. The browser only ever talks to `scopeguard.icvn.tech`, so the session and CSRF cookies are first-party and no cross-origin requests are made. Django rewrites links in account emails (verification, password reset) to `FRONTEND_URL`.
+
+### API on Render
+
+`render.yaml` is a [Blueprint](https://render.com/docs/blueprint-spec):
+
+| Service            | Type         | Purpose                         |
+| ------------------ | ------------ | ------------------------------- |
+| `scopeguard`       | Web (Docker) | Django API                      |
+| `scopeguard-cache` | Key Value    | Django cache + API throttling   |
+| `scopeguard-db`    | PostgreSQL   | Database                        |
 
 1. In Render: **New → Blueprint**, pick this repo.
 2. Fill in the prompted secrets: `LLM_API_KEY`, `DJANGO_ADMIN_URL`, and the S3, Mailgun and Sentry values.
-3. Point a CNAME for `scopeguard.icvn.tech` at the `scopeguard` service's `onrender.com` hostname.
+3. Add a CNAME for `api.scopeguard.icvn.tech` pointing at the service's `onrender.com` hostname.
 
-Migrations run automatically as a pre-deploy step.
+Migrations run automatically as a pre-deploy step. The Django admin is reached directly on `api.scopeguard.icvn.tech`.
+
+| Variable                       | Value                                                          |
+| ------------------------------ | -------------------------------------------------------------- |
+| `DJANGO_ALLOWED_HOSTS`         | `api.scopeguard.icvn.tech,scopeguard.icvn.tech`                |
+| `DJANGO_CSRF_TRUSTED_ORIGINS`  | `https://scopeguard.icvn.tech,https://api.scopeguard.icvn.tech` |
+| `DJANGO_CORS_ALLOWED_ORIGINS`  | `https://scopeguard.icvn.tech` (only for direct API calls)     |
+| `FRONTEND_URL`                 | `https://scopeguard.icvn.tech`                                 |
+
+### Frontend on Vercel
+
+1. In Vercel: **Add New → Project**, import this repo, and set **Root Directory** to `frontend`. The framework, build command and output come from `vercel.json`.
+2. No environment variables are needed: the SPA only calls its own `/api/`.
+3. Add the domain `scopeguard.icvn.tech` in the project settings and create the DNS record Vercel shows.
+
+If the API moves, update the three destinations in `frontend/vercel.json`.
