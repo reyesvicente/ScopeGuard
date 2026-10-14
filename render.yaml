@@ -52,16 +52,11 @@ services:
         value: 30/hour
       - key: WEB_CONCURRENCY
         value: "2"
-      # S3 (media storage)
-      - key: DJANGO_AWS_ACCESS_KEY_ID
-        sync: false
-      - key: DJANGO_AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: DJANGO_AWS_STORAGE_BUCKET_NAME
-        sync: false
-      - key: DJANGO_AWS_S3_REGION_NAME
-        sync: false
-      # Mailgun (signup verification emails)
+      # S3 is optional and off: ScopeGuard stores no user files. To turn it
+      # on, set DJANGO_AWS_STORAGE_BUCKET_NAME, DJANGO_AWS_ACCESS_KEY_ID and
+      # DJANGO_AWS_SECRET_ACCESS_KEY in the dashboard.
+      # Mailgun (signup verification emails). Optional: leave MAILGUN_API_KEY
+      # blank and sign-ups skip email verification.
       - key: MAILGUN_API_KEY
         sync: false
       - key: MAILGUN_DOMAIN

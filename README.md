@@ -137,7 +137,10 @@ The frontend runs on **Vercel** at `scopeguard.icvn.tech`, and the Django API on
 | `scopeguard-db`    | PostgreSQL   | Database                        |
 
 1. In Render: **New → Blueprint**, pick this repo.
-2. Fill in the prompted secrets: `LLM_API_KEY`, `DJANGO_ADMIN_URL`, and the S3, Mailgun and Sentry values.
+2. Fill in the prompted values. Only `LLM_API_KEY` and `DJANGO_ADMIN_URL` are required:
+   - `MAILGUN_API_KEY` / `MAILGUN_DOMAIN`: optional. Without them, emails go to the logs and sign-ups skip email verification.
+   - `SENTRY_DSN`: optional error tracking.
+   - S3 is off by default because nothing is stored as a file. Set `DJANGO_AWS_STORAGE_BUCKET_NAME`, `DJANGO_AWS_ACCESS_KEY_ID` and `DJANGO_AWS_SECRET_ACCESS_KEY` to turn it on.
 3. Add a CNAME for `api.scopeguard.icvn.tech` pointing at the service's `onrender.com` hostname.
 
 Migrations run automatically as a pre-deploy step. The Django admin is reached directly on `api.scopeguard.icvn.tech`.
