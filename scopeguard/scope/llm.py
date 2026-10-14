@@ -1,7 +1,7 @@
 """Minimal client for a hosted open-weight model behind an OpenAI-compatible API.
 
 Works with any provider that implements `/chat/completions` with JSON-schema
-structured output: Hugging Face Inference Providers, Groq, Together, OpenRouter.
+structured output: Groq, Hugging Face Inference Providers, Together, OpenRouter.
 """
 
 import json
@@ -29,6 +29,7 @@ class LLMResult:
 
 
 _CODE_FENCE = re.compile(r"^```(?:json)?\s*|\s*```$")
+USER_AGENT = "ScopeGuard/1.0 (+https://github.com/reyesvicente/ScopeGuard)"
 
 
 def chat_json(*, system: str, user: str, schema: dict[str, Any]) -> LLMResult:
@@ -57,6 +58,9 @@ def chat_json(*, system: str, user: str, schema: dict[str, Any]) -> LLMResult:
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {settings.LLM_API_KEY}",
+            # Cloudflare (in front of Groq and others) rejects urllib's default
+            # "Python-urllib/x.y" User-Agent with a 403, "error code: 1010".
+            "User-Agent": USER_AGENT,
         },
         method="POST",
     )

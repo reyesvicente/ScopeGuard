@@ -55,4 +55,6 @@ VERDICT_SCHEMA = {
         "estimated_hours",
         "draft_reply",
     ],
+    # Required by strict structured output (Groq, OpenAI-style providers).
+    "additionalProperties": False,
 }

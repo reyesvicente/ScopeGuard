@@ -52,6 +52,7 @@ def test_chat_json_sends_schema_and_parses_reply(monkeypatch):
     payload = json.loads(request.data)
     assert request.full_url == "https://models.example/v1/chat/completions"
     assert request.get_header("Authorization") == "Bearer test-key"
+    assert request.get_header("User-agent") == llm.USER_AGENT
     assert payload["response_format"]["json_schema"]["schema"] == SCHEMA
     assert result.content == {"verdict": "in_scope"}
     assert result.prompt_tokens == 500  # noqa: PLR2004
