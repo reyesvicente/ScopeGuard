@@ -22,7 +22,7 @@ services:
         generateValue: true
       - key: DJANGO_ADMIN_URL
         sync: false # e.g. "a-long-random-path/" (keep the trailing slash)
-      # The Vercel frontend proxies /api, /accounts and /static here, so the
+      # The Vercel frontend proxies /api, /_allauth, /accounts and /static here, so the
       # browser's Origin is the frontend while the Host is the API.
       - key: DJANGO_ALLOWED_HOSTS
         value: api.scopeguard.icvn.tech,scopeguard.icvn.tech

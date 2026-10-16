@@ -17,6 +17,8 @@ export default defineConfig(({ command, mode }) => {
       port: 5173,
       proxy: {
         "/api": toDjango,
+        // allauth's headless JSON API (login, signup, logout, email, password).
+        "/_allauth": toDjango,
         // allauth login/logout pages and their static assets, so the session
         // cookie is issued on the same origin as the SPA.
         "/accounts": toDjango,

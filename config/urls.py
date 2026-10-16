@@ -24,6 +24,8 @@ urlpatterns = [
     # User management
     path("users/", include("scopeguard.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
+    # JSON auth API for the React SPA (login, signup, logout, email, password).
+    path("_allauth/", include("allauth.headless.urls")),
     # Your stuff: custom urls includes go here
     # ...
     # Media files
@@ -75,5 +77,9 @@ if settings.DEBUG:
 
 # React SPA routes (client-side routing); must stay last.
 urlpatterns += [
-    re_path(r"^contracts/", spa_index, name="spa"),
+    re_path(
+        r"^(?:contracts/|login$|signup$|verify-email/|password/)",
+        spa_index,
+        name="spa",
+    ),
 ]

@@ -2,7 +2,8 @@ import { Button, Navbar, NavbarActions, NavbarBrand, NavbarContainer, NavbarLink
 import type { MouseEvent, ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 
-import { LOGOUT_URL, useCurrentUser } from "../features/auth/api";
+import { useCurrentUser, useLogout } from "../features/auth/api";
+import { Logo } from "./Logo";
 
 /** ice-ds nav items render plain anchors; route them client-side. */
 function useSpaLink() {
@@ -21,12 +22,14 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const link = useSpaLink();
   const { pathname } = useLocation();
   const { data: user } = useCurrentUser();
+  const logout = useLogout();
 
   return (
     <div className="min-h-screen">
       <Navbar variant="yellow" sticky>
         <NavbarContainer>
-          <NavbarBrand {...link("/")}>
+          <NavbarBrand {...link("/")} className="flex items-center gap-2">
+            <Logo size={32} fill="#fffdf5" />
             <span className="font-display text-xl font-bold">ScopeGuard</span>
           </NavbarBrand>
           <NavbarNav>
@@ -39,11 +42,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </NavbarNav>
           {user && (
             <NavbarActions>
-              <a href={LOGOUT_URL}>
-                <Button size="sm" variant="inverse" type="button">
-                  Log out
-                </Button>
-              </a>
+              <Button
+                size="sm"
+                variant="inverse"
+                type="button"
+                loading={logout.isPending}
+                onClick={() => logout.mutate()}
+              >
+                Log out
+              </Button>
             </NavbarActions>
           )}
         </NavbarContainer>

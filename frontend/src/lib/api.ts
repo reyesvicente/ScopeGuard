@@ -50,6 +50,11 @@ function getCookie(name: string): string | undefined {
     ?.split("=")[1];
 }
 
+/** Django's CSRF token. Production uses the __Secure- prefixed name (see CSRF_COOKIE_NAME). */
+export function csrfToken(): string | undefined {
+  return getCookie("__Secure-csrftoken") ?? getCookie("csrftoken");
+}
+
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 function isCsrfFailure(status: number, envelope: Envelope<unknown>): boolean {
@@ -65,10 +70,7 @@ export async function api<T>(
   const headers: Record<string, string> = { Accept: "application/json" };
   // The browser sets the multipart boundary itself for FormData.
   if (body !== undefined && !isForm) headers["Content-Type"] = "application/json";
-  if (method !== "GET") {
-    // Production uses the __Secure- prefixed cookie name (see CSRF_COOKIE_NAME).
-    headers["X-CSRFToken"] = getCookie("__Secure-csrftoken") ?? getCookie("csrftoken") ?? "";
-  }
+  if (method !== "GET") headers["X-CSRFToken"] = csrfToken() ?? "";
 
   const response = await fetch(`/api${path}`, {
     method,

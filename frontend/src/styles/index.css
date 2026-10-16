@@ -1,5 +1,6 @@
-/* ice-ds ships its own preflight, so only Tailwind's theme + utilities are pulled in. */
-@import "ice-ds/styles";
+/* ice-ds ships its own preflight, so only Tailwind's theme + utilities are pulled in.
+   It goes in a layer so utility classes (text-5xl on an h1, say) beat its element resets. */
+@import "ice-ds/styles" layer(base);
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 

@@ -124,7 +124,7 @@ All endpoints live under `/api/` and return `{"data": ..., "message": "", "error
 
 The frontend runs on **Vercel** at `scopeguard.icvn.tech`, and the Django API on **Render** at `api.scopeguard.icvn.tech`.
 
-`frontend/vercel.json` rewrites `/api/*`, `/accounts/*` and `/static/*` to the API host, the same way the Vite dev server proxies them locally. The browser only ever talks to `scopeguard.icvn.tech`, so the session and CSRF cookies are first-party and no cross-origin requests are made. Django rewrites links in account emails (verification, password reset) to `FRONTEND_URL`.
+`frontend/vercel.json` rewrites `/api/*`, `/_allauth/*`, `/accounts/*` and `/static/*` to the API host, the same way the Vite dev server proxies them locally. The browser only ever talks to `scopeguard.icvn.tech`, so the session and CSRF cookies are first-party and no cross-origin requests are made. Django rewrites links in account emails (verification, password reset) to `FRONTEND_URL`.
 
 ### API on Render
 

@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /accounts/
+Disallow: /_allauth/
+
+Sitemap: https://scopeguard.icvn.tech/sitemap.xml

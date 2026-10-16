@@ -90,6 +90,7 @@ THIRD_PARTY_APPS = [
     "crispy_bootstrap5",
     "allauth",
     "allauth.account",
+    "allauth.headless",
     "allauth.mfa",
     "allauth.socialaccount",
     "rest_framework",
@@ -290,7 +291,8 @@ ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
 # https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_LOGIN_METHODS = {"email"}
 # https://docs.allauth.org/en/latest/account/configuration.html
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+# Headless signup takes a single password; the SPA confirms it client-side.
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*"]
 # https://docs.allauth.org/en/latest/account/configuration.html
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 # https://docs.allauth.org/en/latest/account/configuration.html
@@ -303,6 +305,21 @@ ACCOUNT_FORMS = {"signup": "scopeguard.users.forms.UserSignupForm"}
 SOCIALACCOUNT_ADAPTER = "scopeguard.users.adapters.SocialAccountAdapter"
 # https://docs.allauth.org/en/latest/socialaccount/configuration.html
 SOCIALACCOUNT_FORMS = {"signup": "scopeguard.users.forms.UserSocialSignupForm"}
+
+# django-allauth headless
+# ------------------------------------------------------------------------------
+# The React SPA renders login/signup itself and talks to /_allauth/browser/v1/
+# using the same session cookie as /api/.
+# https://docs.allauth.org/en/latest/headless/configuration.html
+HEADLESS_CLIENTS = ("browser",)
+# Links in allauth emails open these SPA routes. Relative paths are built on
+# the request host, then AccountAdapter.send_mail moves them to FRONTEND_URL.
+HEADLESS_FRONTEND_URLS = {
+    "account_confirm_email": "/verify-email/{key}",
+    "account_reset_password": "/password/reset",
+    "account_reset_password_from_key": "/password/reset/{key}",
+    "account_signup": "/signup",
+}
 
 # django-rest-framework
 # -------------------------------------------------------------------------------
@@ -327,7 +344,7 @@ REST_FRAMEWORK = {
 }
 
 # Public origin of the React SPA (e.g. https://scopeguard.icvn.tech on Vercel).
-# The SPA proxies /api, /accounts and /static here, so the browser stays
+# The SPA proxies /api, /_allauth, /accounts and /static here, so the browser stays
 # same-origin; links in emails are rewritten to this origin (see AccountAdapter).
 FRONTEND_URL = env("FRONTEND_URL", default="").rstrip("/")
 
