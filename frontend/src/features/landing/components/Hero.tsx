@@ -25,6 +25,9 @@ export function Hero() {
             See how it works
           </a>
         </div>
+        <p className="font-mono text-sm">
+          Free while I onboard the first users. Paid plans ($12/mo) come later.
+        </p>
       </div>
       <ExampleCheck />
     </section>
