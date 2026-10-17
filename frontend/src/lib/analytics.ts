@@ -51,7 +51,7 @@ function sendPageView(pathname: string) {
 }
 
 /**
- * Loads gtag.js on the production host only (not localhost or Vercel previews),
+ * Loads gtag.js on the production host only (not localhost or preview hosts),
  * using Consent Mode v2: until the visitor accepts, Google gets cookieless pings only.
  * Sends one page_view for every route in the router, since the SPA never reloads.
  */

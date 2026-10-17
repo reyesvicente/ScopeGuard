@@ -31,24 +31,34 @@ A dashboard adds up the **scope creep caught** across all your contracts. In oth
 ## Demo
 
 > **Live link:**  `https://scopeguard.icvn.tech`
+> **Video Demo from Vidyard:** `https://share.vidyard.com/watch/7DrBCnxdrSMVdPe4GAkHLV`
 
 The flow in the demo:
 
 - **New contract.** Fill in the client and your rate, then paste the SOW or click **Import from file** to pull the text out of a PDF or `.docx`. You review the text before saving.
 - **Contract page.** The SOW stays pinned on the left ("What you agreed to"). On the right are the request form and a feed of checked requests that you can filter by verdict.
-- **Each result card** shows the verdict badge and the model's confidence. It also shows the quoted clause with a **"Quote verified"** or **"Not found in SOW — double-check"** badge, the hours and the change-order price, and the draft reply with a copy button. A footer lists the model, the latency, and the token counts.
+- **Each result card** shows the verdict badge and the model's confidence. It also shows the quoted clause with a **"Quote verified"** or **"Not found in SOW, double-check"** badge, the hours and the change-order price, and the draft reply with a copy button. A footer lists the model, the latency, and the token counts.
 
 Screenshots:
 
+
+![Landing Page](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/lts9otsfsf975jos2s0g.png)
+
 ![Scope Guard Dashboard](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/lydbtzjorsxpl5yt3p9b.png)
 
-![Image description](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/tn4koxow31ipdlpbgeju.png)
+![Dashboard](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/tn4koxow31ipdlpbgeju.png)
 
 
-![Image description](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/3uwrjaem8tuqveq36kne.png)
+![Contract Page](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/3uwrjaem8tuqveq36kne.png)
 
 
-![Image description](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/4e6hzubpqfxozdmsj86s.png)
+![Contract Detail Page](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/4e6hzubpqfxozdmsj86s.png)
+
+
+![Contract Quote Details](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/kekkfhevvvr5wl7ww357.png)
+
+
+![Contract Scope](https://dev-to-uploads.s3.us-east-2.amazonaws.com/uploads/articles/yazw33e73z7zzknq2kxg.png)
 
 ## Code
 
@@ -66,7 +76,8 @@ MIT-licensed. Django 6 + Django REST Framework on the backend, React 18 + Vite o
 | Inference | **Groq**, via the OpenAI-compatible `/chat/completions` API |
 | Backend | Django + DRF, built from cookiecutter-django, PostgreSQL; `pypdf` and `python-docx` for contract import |
 | Frontend | React 18 + Vite + TypeScript, TanStack Query, Zustand, React Hook Form + Zod, my own `ice-ds` neubrutalist component library |
-| Hosting | **Vercel** for the frontend (`scopeguard.icvn.tech`), **Render** for the API, Postgres, and Key Value (`api.scopeguard.icvn.tech`) |
+| Observability | **Sentry**: errors, request traces, and AI agent spans for every scope check (model, tokens, latency) |
+| Hosting | **Render** for everything: one Docker web service serves the React app and the API on `scopeguard.icvn.tech`, plus Postgres and Key Value |
 
 ### Why it isn't self-hosted (anymore)
 
@@ -198,11 +209,32 @@ The second bug was why the failure was invisible. The 403 body was `{"detail": "
 
 The tests hadn't caught it because DRF's `force_authenticate` skips CSRF entirely. There's now a test that does what the browser does: load `/api/users/me/`, read the cookie, and send it back with the write.
 
-### One domain for the browser, two hosts behind it
+### One domain, one service
 
-The frontend is a static build on Vercel, and the API runs on Render. Making the browser talk to two origins means CORS with credentials, shared cookie domains, and more CSRF configuration. That's the same family of bugs as above, multiplied.
+The first deploy split the app: the React build on Vercel at `scopeguard.icvn.tech`, and the API on Render at `api.scopeguard.icvn.tech`. To keep the browser off two origins (CORS with credentials, shared cookie domains, more CSRF configuration), `vercel.json` rewrote `/api/*`, `/accounts/*`, and `/static/*` to the API host. It worked, but it was two platforms, two DNS records, and a proxy hop for every request. Django also thought it was on the `api.` host, so the account adapter had to rewrite links in verification and password-reset emails to the public domain.
 
-Instead, `vercel.json` rewrites `/api/*`, `/accounts/*`, and `/static/*` to `api.scopeguard.icvn.tech`, the same way the Vite dev server proxies them locally. The browser only ever sees `scopeguard.icvn.tech`, so cookies are first-party and nothing is cross-origin. The one leak is links Django builds itself: behind the proxy it thinks it's on the `api.` host, so the account adapter rewrites links in verification and password-reset emails to the public domain.
+The production Docker image already had a Node stage that builds the frontend into Django's static files, and a view that serves `index.html` for the app's routes. So I dropped Vercel and pointed `scopeguard.icvn.tech` straight at the Render service. Now there's one deploy, one origin, and no proxy.
+
+One gotcha: Render's own domains already sit behind Cloudflare, so my Cloudflare CNAME has to be **DNS only**. With the orange-cloud proxy on, Cloudflare refuses to proxy to another Cloudflare IP and shows *Error 1000: DNS points to prohibited IP*.
+
+### Tracing the agent with Sentry
+
+A scope check is one agent step: build a prompt from the SOW, call the model, validate the structured verdict, check the quote, and draft the reply. When a check is slow or wrong, I want to know which part went wrong, so each check is traced in Sentry as two nested spans that follow Sentry's AI agent conventions:
+
+- `gen_ai.invoke_agent` wraps the whole check and records the verdict, whether the cited clause was found in the SOW, and where the request came from. A failed check marks the span as an error.
+- `gen_ai.chat` wraps the model call and records the model, input and output tokens, and latency. Sentry's AI Agents view turns those into per-model latency and token charts.
+
+```python
+with sentry_sdk.start_span(op="gen_ai.chat", name=f"chat {settings.LLM_MODEL}") as span:
+    span.set_data("gen_ai.request.model", settings.LLM_MODEL)
+    result = _chat_json(system=system, user=user, schema=schema)
+    span.set_data("gen_ai.usage.input_tokens", result.prompt_tokens)
+    span.set_data("gen_ai.usage.output_tokens", result.completion_tokens)
+```
+
+The spans deliberately leave out prompts and replies. SOWs are often under NDA, so the trace says *how* a check went without storing *what* the contract says. Sentry is optional: with no `SENTRY_DSN`, the spans do nothing.
+
+<!-- TODO before publishing: add a screenshot of a scope-check trace and the AI Agents view from Sentry -->
 
 ### Tests
 
@@ -214,7 +246,7 @@ The scope app has 37 tests:
 - the API: auth, the response envelope, per-user privacy, pagination, filtering, re-runs
 - the browser's real CSRF flow
 
-Five more cover the proxy setup: the email link rewriting, and a write arriving with the API host but the frontend's origin. The network is mocked, so the tests run in seconds in CI with no API key. Ruff and mypy are clean. The mocks are also why the two Groq bugs got through: only a real request found them.
+Five more cover running behind a host that isn't the public one: the email link rewriting, and a write arriving with one host but another origin. The single-domain deploy doesn't need them today, but they keep the split setup an option. The network is mocked, so the tests run in seconds in CI with no API key. Ruff and mypy are clean. The mocks are also why the two Groq bugs got through: only a real request found them.
 
 ## Why Does Open Innovation Matter?
 
@@ -232,5 +264,6 @@ The honest trade-off: hosted inference means contracts leave your server by defa
 
 ## Prize Categories
 
-- **Best Use of a .tech Domain**: It's live on `scopeguard.icvn.tech`, with the API on `api.scopeguard.icvn.tech`.
-- **Best Use of Render**: The API, database, and cache run on Render.
+- **Best Use of a .tech Domain**: It's live on `scopeguard.icvn.tech`.
+- **Best Use of Sentry Agent Tracing**: Every scope check is traced as a `gen_ai.invoke_agent` span with a nested `gen_ai.chat` span. The trace records the model, tokens, latency, and the verdict, but not the contract text.
+- **Best Use of Render**: The whole product runs on Render: the React front end and Django API in one Docker web service, plus Postgres and Key Value. The service is the agent's runtime: it builds the prompt from the SOW, calls the open-weight model, validates the structured verdict, and drafts the change order.

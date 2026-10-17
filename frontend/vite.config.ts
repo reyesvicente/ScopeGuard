@@ -9,9 +9,8 @@ export default defineConfig(({ command, mode }) => {
   const toDjango = { target, changeOrigin: false };
 
   return {
-    // Vercel serves the build from the site root (VERCEL=1 during its builds).
-    // The Docker image instead has Django + whitenoise serve it from /static/spa/.
-    base: command === "build" && !env.VERCEL ? "/static/spa/" : "/",
+    // The Docker image has Django + whitenoise serve the build from /static/spa/.
+    base: command === "build" ? "/static/spa/" : "/",
     plugins: [react(), tailwindcss()],
     server: {
       port: 5173,

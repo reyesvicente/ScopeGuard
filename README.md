@@ -122,17 +122,15 @@ All endpoints live under `/api/` and return `{"data": ..., "message": "", "error
 
 ## Deploy
 
-The frontend runs on **Vercel** at `scopeguard.icvn.tech`, and the Django API on **Render** at `api.scopeguard.icvn.tech`.
+Everything runs on **Render** at `scopeguard.icvn.tech`. The production Docker image builds `frontend/` in a Node stage and copies it into Django's static files, so one web service serves both the React app and the API. The browser only ever talks to one origin, so the session and CSRF cookies are first-party and no cross-origin requests are made.
 
-`frontend/vercel.json` rewrites `/api/*`, `/_allauth/*`, `/accounts/*` and `/static/*` to the API host, the same way the Vite dev server proxies them locally. The browser only ever talks to `scopeguard.icvn.tech`, so the session and CSRF cookies are first-party and no cross-origin requests are made. Django rewrites links in account emails (verification, password reset) to `FRONTEND_URL`.
-
-### API on Render
+### Render
 
 `render.yaml` is a [Blueprint](https://render.com/docs/blueprint-spec):
 
 | Service            | Type         | Purpose                         |
 | ------------------ | ------------ | ------------------------------- |
-| `scopeguard`       | Web (Docker) | Django API                      |
+| `scopeguard`       | Web (Docker) | Django API + React build        |
 | `scopeguard-cache` | Key Value    | Django cache + API throttling   |
 | `scopeguard-db`    | PostgreSQL   | Database                        |
 
@@ -141,21 +139,13 @@ The frontend runs on **Vercel** at `scopeguard.icvn.tech`, and the Django API on
    - `MAILGUN_API_KEY` / `MAILGUN_DOMAIN`: optional. Without them, emails go to the logs and sign-ups skip email verification.
    - `SENTRY_DSN`: optional error tracking.
    - S3 is off by default because nothing is stored as a file. Set `DJANGO_AWS_STORAGE_BUCKET_NAME`, `DJANGO_AWS_ACCESS_KEY_ID` and `DJANGO_AWS_SECRET_ACCESS_KEY` to turn it on.
-3. Add a CNAME for `api.scopeguard.icvn.tech` pointing at the service's `onrender.com` hostname.
+3. Add a CNAME for `scopeguard.icvn.tech` pointing at the service's `onrender.com` hostname. In Cloudflare, set it to **DNS only** (grey cloud): Render already sits behind Cloudflare, and proxying to it gives *Error 1000: DNS points to prohibited IP*.
 
-Migrations run automatically as a pre-deploy step. The Django admin is reached directly on `api.scopeguard.icvn.tech`.
+Migrations run automatically as a pre-deploy step.
 
 | Variable                       | Value                                                          |
 | ------------------------------ | -------------------------------------------------------------- |
-| `DJANGO_ALLOWED_HOSTS`         | `api.scopeguard.icvn.tech,scopeguard.icvn.tech`                |
-| `DJANGO_CSRF_TRUSTED_ORIGINS`  | `https://scopeguard.icvn.tech,https://api.scopeguard.icvn.tech` |
+| `DJANGO_ALLOWED_HOSTS`         | `scopeguard.icvn.tech`                                         |
+| `DJANGO_CSRF_TRUSTED_ORIGINS`  | `https://scopeguard.icvn.tech`                                 |
 | `DJANGO_CORS_ALLOWED_ORIGINS`  | `https://scopeguard.icvn.tech` (only for direct API calls)     |
 | `FRONTEND_URL`                 | `https://scopeguard.icvn.tech`                                 |
-
-### Frontend on Vercel
-
-1. In Vercel: **Add New → Project**, import this repo, and set **Root Directory** to `frontend`. The framework, build command and output come from `vercel.json`.
-2. No environment variables are needed: the SPA only calls its own `/api/`.
-3. Add the domain `scopeguard.icvn.tech` in the project settings and create the DNS record Vercel shows.
-
-If the API moves, update the three destinations in `frontend/vercel.json`.

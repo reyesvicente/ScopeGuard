@@ -343,9 +343,9 @@ REST_FRAMEWORK = {
     },
 }
 
-# Public origin of the React SPA (e.g. https://scopeguard.icvn.tech on Vercel).
-# The SPA proxies /api, /_allauth, /accounts and /static here, so the browser stays
-# same-origin; links in emails are rewritten to this origin (see AccountAdapter).
+# Public origin of the React SPA (e.g. https://scopeguard.icvn.tech). If the SPA is
+# hosted elsewhere and proxies /api, /_allauth, /accounts and /static here, links in
+# emails are rewritten to this origin (see AccountAdapter).
 FRONTEND_URL = env("FRONTEND_URL", default="").rstrip("/")
 
 # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup

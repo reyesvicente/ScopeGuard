@@ -1,6 +1,6 @@
 # Render Blueprint for ScopeGuard — https://render.com/docs/blueprint-spec
 #
-# scopeguard          Django API on scopeguard.icvn.tech (the SPA is on Vercel)
+# scopeguard          Django + the React build on scopeguard.icvn.tech
 # scopeguard-cache    Key Value (Redis) for Django's cache and API throttling
 # scopeguard-db       PostgreSQL
 
@@ -22,8 +22,6 @@ services:
         generateValue: true
       - key: DJANGO_ADMIN_URL
         sync: false # e.g. "a-long-random-path/" (keep the trailing slash)
-      # The Vercel frontend proxies /api, /_allauth, /accounts and /static here, so the
-      # browser's Origin is the frontend while the Host is the API.
       - key: DJANGO_ALLOWED_HOSTS
         value: scopeguard.icvn.tech,scopeguard.icvn.tech
       - key: DJANGO_CSRF_TRUSTED_ORIGINS

@@ -35,6 +35,6 @@ Get a key from the provider, then change all three of `LLM_API_KEY`, `LLM_BASE_U
 ## Before publishing the blog post
 
 - [ ] Run one real scope check and confirm the provider honours the JSON schema
-- [ ] Deploy the API to Render (`api.scopeguard.icvn.tech`) and the frontend to Vercel (`scopeguard.icvn.tech`); the post says it's live
+- [x] Deploy the app and API to Render (`scopeguard.icvn.tech`); the post says it's live
 - [ ] Confirm "a fraction of a cent per check" against current token pricing
 - [ ] Add screenshots of the dashboard and an out-of-scope result card

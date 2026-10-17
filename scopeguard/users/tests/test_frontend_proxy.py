@@ -64,7 +64,7 @@ def test_account_emails_link_to_frontend(rf):
 @proxied
 @pytest.mark.django_db
 def test_proxied_write_passes_csrf(user):
-    """Host is the API (Vercel rewrites to it); Origin is the frontend."""
+    """Host is the API (a frontend proxy rewrites to it); Origin is the frontend."""
     browser = Client(enforce_csrf_checks=True, HTTP_HOST=API_HOST)
     browser.force_login(user)
     token = browser.get("/api/users/me/", secure=True).cookies["csrftoken"].value
