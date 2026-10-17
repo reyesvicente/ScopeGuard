@@ -4,6 +4,7 @@ from decimal import Decimal
 from decimal import InvalidOperation
 from typing import Any
 
+import sentry_sdk
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models import QuerySet
@@ -84,7 +85,27 @@ def run_scope_check(
 
 
 def evaluate_scope_check(check: ScopeCheck) -> ScopeCheck:
-    """Ask the model for a verdict and store it on `check`."""
+    """Ask the model for a verdict and store it on `check`.
+
+    Traced as a Sentry `gen_ai.invoke_agent` span around the model call, tagged
+    with the verdict and whether the cited clause was found in the SOW.
+    """
+    with sentry_sdk.start_span(
+        op="gen_ai.invoke_agent",
+        name="invoke_agent ScopeGuard",
+    ) as span:
+        span.set_data("gen_ai.operation.name", "invoke_agent")
+        span.set_data("gen_ai.agent.name", "ScopeGuard")
+        _evaluate(check)
+        span.set_data("scopeguard.verdict", check.verdict)
+        span.set_data("scopeguard.clause_verified", check.clause_verified)
+        span.set_data("scopeguard.source", check.source)
+        if check.verdict == ScopeCheck.Verdict.FAILED:
+            span.set_status("internal_error")
+    return check
+
+
+def _evaluate(check: ScopeCheck) -> ScopeCheck:
     contract = check.contract
     prompt = USER_TEMPLATE.format(
         client_name=contract.client_name,

@@ -12,6 +12,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
+import sentry_sdk
 from django.conf import settings
 
 
@@ -33,7 +34,34 @@ USER_AGENT = "ScopeGuard/1.0 (+https://github.com/reyesvicente/ScopeGuard)"
 
 
 def chat_json(*, system: str, user: str, schema: dict[str, Any]) -> LLMResult:
-    """Send one chat turn and get back JSON constrained to `schema`."""
+    """Send one chat turn and get back JSON constrained to `schema`.
+
+    Traced as a Sentry `gen_ai.chat` span with the model, tokens and latency.
+    Prompts and replies are not recorded: SOWs are often under NDA.
+    """
+    with sentry_sdk.start_span(
+        op="gen_ai.chat",
+        name=f"chat {settings.LLM_MODEL}",
+    ) as span:
+        span.set_data("gen_ai.operation.name", "chat")
+        span.set_data("gen_ai.system", "openai")
+        span.set_data("gen_ai.request.model", settings.LLM_MODEL)
+        span.set_data("gen_ai.request.temperature", 0)
+        result = _chat_json(system=system, user=user, schema=schema)
+        span.set_data("gen_ai.response.model", result.model)
+        if result.prompt_tokens is not None:
+            span.set_data("gen_ai.usage.input_tokens", result.prompt_tokens)
+        if result.completion_tokens is not None:
+            span.set_data("gen_ai.usage.output_tokens", result.completion_tokens)
+        if result.prompt_tokens is not None and result.completion_tokens is not None:
+            span.set_data(
+                "gen_ai.usage.total_tokens",
+                result.prompt_tokens + result.completion_tokens,
+            )
+        return result
+
+
+def _chat_json(*, system: str, user: str, schema: dict[str, Any]) -> LLMResult:
     if not settings.LLM_API_KEY:
         msg = "No model API key configured (set LLM_API_KEY)."
         raise LLMError(msg)

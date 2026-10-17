@@ -58,7 +58,7 @@ def test_signup_sends_verification_link_to_spa(settings):
     flows = response.json()["data"]["flows"]
     assert {"id": "verify_email", "is_pending": True} in flows
     assert User.objects.filter(email="new@example.com").exists()
-    body = mail.outbox[0].body
+    body = str(mail.outbox[0].body)
     assert re.search(rf"{FRONTEND}/verify-email/\S+", body)
     assert API_HOST not in body
 
@@ -169,7 +169,7 @@ def test_password_reset_link_opens_spa_and_sets_password():
     )
 
     assert response.status_code == 200  # noqa: PLR2004
-    link = re.search(rf"{FRONTEND}/password/reset/(\S+)", mail.outbox[0].body)
+    link = re.search(rf"{FRONTEND}/password/reset/(\S+)", str(mail.outbox[0].body))
     assert link
 
     response = browser.post(
