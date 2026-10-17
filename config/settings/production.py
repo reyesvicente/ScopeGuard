@@ -27,7 +27,10 @@ ALLOWED_HOSTS = env.list(
 RENDER_EXTERNAL_HOSTNAME = env("RENDER_EXTERNAL_HOSTNAME", default=None)
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
-    CSRF_TRUSTED_ORIGINS = [*CSRF_TRUSTED_ORIGINS, f"https://{RENDER_EXTERNAL_HOSTNAME}"]
+    CSRF_TRUSTED_ORIGINS = [
+        *CSRF_TRUSTED_ORIGINS,
+        f"https://{RENDER_EXTERNAL_HOSTNAME}",
+    ]
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -116,7 +119,9 @@ if AWS_STORAGE_BUCKET_NAME:
     AWS_S3_REGION_NAME = env("DJANGO_AWS_S3_REGION_NAME", default=None)
     # https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html#cloudfront
     AWS_S3_CUSTOM_DOMAIN = env("DJANGO_AWS_S3_CUSTOM_DOMAIN", default=None)
-    aws_s3_domain = AWS_S3_CUSTOM_DOMAIN or f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    aws_s3_domain = (
+        AWS_S3_CUSTOM_DOMAIN or f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    )
     STORAGES["default"] = {
         "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {

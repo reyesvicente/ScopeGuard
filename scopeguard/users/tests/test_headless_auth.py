@@ -25,7 +25,7 @@ proxied = override_settings(
 
 def browser_with_csrf() -> tuple[Client, dict[str, str]]:
     """A CSRF-enforcing browser behind the frontend proxy, plus write headers."""
-    browser = Client(enforce_csrf_checks=True, HTTP_HOST=API_HOST)
+    browser = Client(enforce_csrf_checks=True, headers={"host": API_HOST})
     token = browser.get(f"{AUTH}/session", secure=True).cookies["csrftoken"].value
     headers = {"X-CSRFToken": token, "Origin": FRONTEND, "Referer": f"{FRONTEND}/login"}
     return browser, headers

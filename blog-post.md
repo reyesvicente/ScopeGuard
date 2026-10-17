@@ -131,15 +131,24 @@ A model's reply ends up in an email to a paying client, so most of the engineeri
 VERDICT_SCHEMA = {
     "type": "object",
     "properties": {
-        "verdict": {"type": "string", "enum": ["in_scope", "out_of_scope", "ambiguous"]},
+        "verdict": {
+            "type": "string",
+            "enum": ["in_scope", "out_of_scope", "ambiguous"],
+        },
         "confidence": {"type": "number"},
         "reasoning": {"type": "string"},
         "cited_clause": {"type": "string"},
         "estimated_hours": {"type": "number"},
         "draft_reply": {"type": "string"},
     },
-    "required": ["verdict", "confidence", "reasoning",
-                 "cited_clause", "estimated_hours", "draft_reply"],
+    "required": [
+        "verdict",
+        "confidence",
+        "reasoning",
+        "cited_clause",
+        "estimated_hours",
+        "draft_reply",
+    ],
     "additionalProperties": False,
 }
 ```
@@ -158,7 +167,9 @@ def fill_estimate(reply: str, *, hours: Decimal | None, contract: Contract) -> s
         text = "a quote to follow"
     else:
         rate = f"{contract.hourly_rate:,.2f}/hr"
-        text = f"{contract.currency} {cost:,.2f} ({hours.normalize():f} hours at {rate})"
+        text = (
+            f"{contract.currency} {cost:,.2f} ({hours.normalize():f} hours at {rate})"
+        )
     return reply.replace(ESTIMATE_PLACEHOLDER, text)
 ```
 

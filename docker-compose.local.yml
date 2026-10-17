@@ -1,7 +1,7 @@
 volumes:
   scopeguard_local_postgres_data: {}
   scopeguard_local_postgres_data_backups: {}
-  
+
 
 services:
   django:
@@ -43,4 +43,3 @@ services:
     container_name: scopeguard_local_mailpit
     ports:
       - "8025:8025"
-
