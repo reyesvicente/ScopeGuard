@@ -26,7 +26,7 @@ Is a shop page in the contract? You'd have to dig out the statement of work (SOW
 
 A dashboard adds up the **scope creep caught** across all your contracts. In other words, the billable work you would otherwise have done for free.
 
-**Who pays for it?** Solo freelancers and small agencies on fixed-scope projects or retainers: developers, designers, copywriters, video editors. If ScopeGuard catches even one out-of-scope request a year, a $9/month subscription would pay for itself. And because a check on a shared open-weight model costs about a twentieth of a cent (numbers below), a $9 price leaves plenty of margin.
+**Who pays for it?** Solo freelancers and small agencies on fixed-scope projects or retainers: developers, designers, copywriters, video editors. If ScopeGuard catches even one out-of-scope request a year, a $12/month subscription would pay for itself. And because a check on a shared open-weight model costs about a twentieth of a cent (numbers below), a $12 price leaves plenty of margin.
 
 ## Demo
 
@@ -81,7 +81,7 @@ MIT-licensed. Django 6 + Django REST Framework on the backend, React 18 + Vite o
 
 ### Why it isn't self-hosted (anymore)
 
-The first version ran Gemma through Ollama as a container next to Django. That works well on a laptop. Then I priced hosting it: CPU-only inference for a small model with a context window big enough for a real SOW needed Render's Pro Plus plan, about **$175 a month**, before a single user signed up. For a $9 side hustle, that's backwards.
+The first version ran Gemma through Ollama as a container next to Django. That works well on a laptop. Then I priced hosting it: CPU-only inference for a small model with a context window big enough for a real SOW needed Render's Pro Plus plan, about **$175 a month**, before a single user signed up. For a $12 side hustle, that's backwards.
 
 So inference moved to a hosted provider that serves open weights. The model is still open, but now someone else's GPUs are shared across thousands of apps, and I pay per token. Hosting ScopeGuard now costs about what any small Django app costs.
 
@@ -254,7 +254,7 @@ Moving off self-hosting changed *where* the model runs. It didn't change why it'
 
 **1. No lock-in on the most important part.** The model and the provider are three env vars. If a provider raises prices, rate-limits me, runs out of free credits, or shuts down, I move to another one that serves the same weights, and the verdicts don't change underneath my users. That isn't hypothetical: it happened during this build. It took two env vars and two one-line fixes, and the fixes now work for every provider. With a closed model, there is one vendor, and when it deprecates a model version, your product's behavior changes on their schedule.
 
-**2. Privacy has an exit.** A freelancer's SOWs and client messages are often under NDA. Uploaded contract files are never stored. Today the default model host is a shared provider, which is the right trade for a $9 product. But because the weights are open, a freelancer or agency that can't send contracts to a third party can run the same model on their own hardware with vLLM or Ollama, point `LLM_BASE_URL` at it, and get the same app. A closed API can only promise not to train on your data.
+**2. Privacy has an exit.** A freelancer's SOWs and client messages are often under NDA. Uploaded contract files are never stored. Today the default model host is a shared provider, which is the right trade for a $12 product. But because the weights are open, a freelancer or agency that can't send contracts to a third party can run the same model on their own hardware with vLLM or Ollama, point `LLM_BASE_URL` at it, and get the same app. A closed API can only promise not to train on your data.
 
 **3. Competition keeps the pricing honest.** Every check sends the *entire SOW* as context, so the heaviest users (long contracts, chatty clients) cost the most to serve. Open weights mean many providers serve the same model and compete on price per token. That keeps a check around a twentieth of a cent today, and the `30/hour` per-user throttle caps the worst case.
 
