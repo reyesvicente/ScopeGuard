@@ -30,7 +30,7 @@ dependencies = [
   "hiredis==3.4.2",
   "pillow==12.3.0",
   "psycopg[c]==3.3.6",
-  "pypdf==6.20.1",
+  "pypdf==6.21.4",
   "python-docx==1.2.0",
   "python-slugify==9.1.2",
   "redis==8.1.0",
